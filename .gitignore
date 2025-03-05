@@ -1,7 +1,8 @@
 */.venv
 */.env
 */.env.*
-*/src/backend/.env
+# any call .env
+src/*/.env
 */.vscode
 */.idea
 */.pytest_cache
