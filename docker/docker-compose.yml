@@ -5,12 +5,15 @@ services:
     restart: unless-stopped
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./db/mysql/init-scripts:/docker-entrypoint-initdb.d
+      - ../db/mysql/db-init:/docker-entrypoint-initdb.d
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: social_media_db
+      MYSQL_ROOT_HOST: "%"
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
 
   mongodb:
     image: mongo:latest
@@ -21,6 +24,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: social_media_db
+    ports:
+      - "27017:27017"
 
   backend:
     build:

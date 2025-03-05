@@ -1,6 +1,7 @@
 from flask import Flask
 from routes.auth import auth_bp
 from routes.post import post_bp
+from utils.authtool import JWTManager
 from dotenv import load_dotenv
 
 import os
@@ -9,6 +10,8 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['JWT'] = JWTManager(app.config['SECRET_KEY'])
+
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
