@@ -1,0 +1,46 @@
+# Social Media Project
+## temp Readme
+
+This project is a social media application featuring separate backend and frontend services. The backend is built with Flask and integrates both MySQL and MongoDB for persistence. The frontend is a Python application that interacts with the backend.
+
+## Project Structure
+
+- **Backend:** Located in `src/backend/src`
+  - Contains routes for authentication and posts.
+  - Utility modules for JWT and database connections in `src/backend/src/utils`.
+
+- **Frontend:** Located in `src/frontend/src`
+  - Currently serves as a placeholder; integration with the backend is in progress.
+
+- **Database Initialization:**
+  - MySQL initialization SQL is available in `db/mysql/db-init/init.sql`.
+
+- **Docker Setup:**
+  - Docker configuration files, including Dockerfiles for both backend and frontend, as well as a Docker Compose file.
+
+## Getting Started
+
+### Prerequisites
+
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/)
+
+### Setup Instructions
+
+1. **Clone the repository.**
+
+2. **Create a `requirements.txt` file** in the root (if not already present) and list all Python dependencies (e.g., Flask, pymongo, mysql-connector-python, python-dotenv, PyJWT).
+
+3. **Configure Environment Variables:**
+   - Update the environment variables in the backend and frontend `.env` files found in `src/backend` and `src/frontend`.
+   - Ensure any sensitive data is secured.
+
+4. **Initialize the Database:**
+   - The MySQL schema is set up automatically using the script in `db/mysql/db-init/init.sql` when the MySQL container starts.
+
+### Running the Application
+
+1. **Start Docker Compose:**
+
+   ```sh
+   docker-compose -f docker/docker-compose.yml up --build
