@@ -1,0 +1,7 @@
+*/.venv
+*/.env
+*/.env.*
+*/src/backend/.env
+*/.vscode
+*/.idea
+*/.pytest_cache

@@ -1,0 +1,47 @@
+
+services:
+  mysql:
+    image: mysql:latest
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./db/mysql/init-scripts:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: social_media_db
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+  mongodb:
+    image: mongo:latest
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: social_media_db
+
+  backend:
+    build:
+      context: ./src/backend/docker
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+
+  frontend:
+    build:
+      context: ./src/frontend/docker
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+
+networks:
+  default:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  mongodb-data:
