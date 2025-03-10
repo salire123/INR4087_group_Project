@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
-from utils.db import create_mysql_connection
+from utils.db import create_mysql_connection, create_mongo_connection
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 from contextlib import contextmanager
 
@@ -26,6 +27,21 @@ def connect_mysql():
             cursor.close()
         if connection:
             connection.close()
+
+@contextmanager
+def connect_mongo():
+    mongo_client = None
+    try:
+        mongo_client = create_mongo_connection()
+        if mongo_client:
+            yield mongo_client
+        else:
+            raise Exception("Failed to connect to MongoDB")
+    except Exception as e:
+        raise e
+    finally:
+        if mongo_client:
+            mongo_client.close()
 
 @auth_bp.route("/login", methods=["POST"])
 # for login, we need to check if the user exists in the database
@@ -88,6 +104,18 @@ def register():
             
             if connection.is_connected():
                 connection.commit()
+
+            cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
+            user_id = cursor.fetchone()[0]
+
+
+            with connect_mongo() as mongo_client:
+                # create a db by userid
+                db = mongo_client["history_db"]
+                collection = db["history"]
+
+                # insert the user into the history collection
+                collection.insert_one({"user_id": user_id, "history": [], "likes": [], "account_created": str(datetime.now())})
 
             return jsonify({"message": "User created successfully"}), 201
     

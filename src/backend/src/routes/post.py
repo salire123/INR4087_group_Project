@@ -253,3 +253,7 @@ def create_comment():
             return jsonify({"message": "Comment created"}), 200
     except Exception as e:
         return jsonify({"message": str(e)}), 500
+    
+@post_bp.route("/<string:post_id>/like", methods=["GET"])
+def like_post(post_id):
+    '''create a like on user history'''
