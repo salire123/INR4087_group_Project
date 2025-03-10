@@ -76,7 +76,7 @@ def register():
         with connect_mysql() as (cursor, connection):
 
             # check if the user already exists
-            cursor.execute("SELECT username, email FROM users WHERE username = %s", (username, email,))
+            cursor.execute("SELECT username, email FROM users WHERE username = %s", (username,))
             if cursor.fetchone():
                 return jsonify({"message": "User already exists"}), 400
 

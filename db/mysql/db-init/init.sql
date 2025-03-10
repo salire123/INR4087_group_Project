@@ -10,3 +10,5 @@ CREATE TABLE users (
     password VARCHAR(255) NOT NULL, -- Hashed password
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO users (username, email, password) VALUES ('testuser', 'test@email.local', 'password123')
