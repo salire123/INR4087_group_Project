@@ -1,47 +1,14 @@
+# routes/auth.py
 from flask import Blueprint, request, jsonify, current_app
-from utils.db import create_mysql_connection, create_mongo_connection
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from utils.db import connect_mysql, connect_mongo
 
 from contextlib import contextmanager
 
 
 
 auth_bp = Blueprint('auth', __name__)
-
-@contextmanager
-def connect_mysql():
-    connection = None
-    cursor = None
-    try:
-        connection = create_mysql_connection()
-        if connection.is_connected():
-            cursor = connection.cursor()
-            yield cursor, connection
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        raise e
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-@contextmanager
-def connect_mongo():
-    mongo_client = None
-    try:
-        mongo_client = create_mongo_connection()
-        if mongo_client:
-            yield mongo_client
-        else:
-            raise Exception("Failed to connect to MongoDB")
-    except Exception as e:
-        raise e
-    finally:
-        if mongo_client:
-            mongo_client.close()
 
 @auth_bp.route("/login", methods=["POST"])
 # for login, we need to check if the user exists in the database
@@ -101,23 +68,32 @@ def register():
 
             # insert the user into the database
             cursor.execute("INSERT INTO users (username, password, email) VALUES (%s, %s, %s)", (username, password, email))
-            
-            if connection.is_connected():
-                connection.commit()
 
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
             user_id = cursor.fetchone()[0]
 
+            # create a history collection for the user in MongoDB
+            try:
+                with connect_mongo() as mongo_client:
+                    # create a db by userid
+                    db = mongo_client
+                    collection = db["history"]
+                    # insert the user into the history collection
+                    collection.insert_one({"user_id": user_id, "history": [], "likes": [], "account_created": str(datetime.now())})
 
-            with connect_mongo() as mongo_client:
-                # create a db by userid
-                db = mongo_client["history_db"]
-                collection = db["history"]
+            # if an error occurs, rollback the changes
+            except Exception as e:
+                return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+            # if no error occurs, commit the changes
+            if connection.is_connected():
+                connection.commit()
 
-                # insert the user into the history collection
-                collection.insert_one({"user_id": user_id, "history": [], "likes": [], "account_created": str(datetime.now())})
 
-            return jsonify({"message": "User created successfully"}), 201
+
+            return jsonify({
+                "message": "User created successfully",
+                "user_id": user_id
+                            }), 201
     
     except Exception as e:
         return jsonify({"message": f"An error occurred: {str(e)}"}), 500

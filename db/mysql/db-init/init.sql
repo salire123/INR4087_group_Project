@@ -11,4 +11,4 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO users (username, email, password) VALUES ('testuser', 'test@email.local', 'password123')
+INSERT into users (username, email, password) values ('test', 'test@test.com', 'test');

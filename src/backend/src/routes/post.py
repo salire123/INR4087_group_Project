@@ -1,46 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
-from utils.db import create_mysql_connection, create_mongo_connection
 from datetime import datetime
 from bson.objectid import ObjectId
 from contextlib import contextmanager
 
+from utils.db import connect_mysql, connect_mongo
+
 post_bp = Blueprint('post', __name__)
 
-@contextmanager
-def connect_mysql():
-    connection = None
-    cursor = None
-    try:
-        connection = create_mysql_connection()
-        if connection and connection.is_connected():
-            cursor = connection.cursor()
-            yield cursor, connection
-        else:
-            raise Exception("Failed to connect to MySQL")
-    except Exception as e:
-        if connection:
-            connection.rollback()
-        raise e
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-@contextmanager
-def connect_mongo():
-    mongo_client = None
-    try:
-        mongo_client = create_mongo_connection()
-        if mongo_client:
-            yield mongo_client
-        else:
-            raise Exception("Failed to connect to MongoDB")
-    except Exception as e:
-        raise e
-    finally:
-        if mongo_client:
-            mongo_client.close()
 
 @post_bp.route("/create_post", methods=["POST"])
 def create_post():
@@ -69,7 +35,7 @@ def create_post():
             user_id = result[0]
         
         with connect_mongo() as mongo_client:
-            db = mongo_client["posts_db"]
+            db = mongo_client
             collection = db["posts"]
             post = {
                 "title": title,
@@ -95,7 +61,7 @@ def get_posts():
             return jsonify({"message": "Page and per_page must be positive integers"}), 400
 
         with connect_mongo() as mongo_client:
-            db = mongo_client["posts_db"]
+            db = mongo_client
             collection = db["posts"]
             posts = collection.find().skip((post_page - 1) * post_per_page).limit(post_per_page)
             posts_list = [dict(post, _id=str(post["_id"])) for post in posts]  # Convert ObjectId to string
@@ -114,7 +80,7 @@ def get_post():
 
     try:
         with connect_mongo() as mongo_client:
-            db = mongo_client["posts_db"]
+            db = mongo_client
             collection = db["posts"]
             post = collection.find_one({"_id": ObjectId(post_id)})
             if not post:
@@ -148,7 +114,7 @@ def delete_post():
             user_id = result[0]
 
         with connect_mongo() as mongo_client:
-            db = mongo_client["posts_db"]
+            db = mongo_client
             collection = db["posts"]
             post = collection.find_one({"_id": ObjectId(post_id)})
             if not post:
@@ -188,7 +154,7 @@ def update_post():
             user_id = result[0]
 
         with connect_mongo() as mongo_client:
-            db = mongo_client["posts_db"]
+            db = mongo_client
             collection = db["posts"]
             post = collection.find_one({"_id": ObjectId(post_id)})
             if not post:
@@ -233,7 +199,7 @@ def create_comment():
             user_id = result[0]
 
         with connect_mongo() as mongo_client:
-            db = mongo_client["posts_db"]
+            db = mongo_client
             collection = db["posts"]
             post_id_obj = ObjectId(post_id)
             comment_obj = {
