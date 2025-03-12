@@ -2,24 +2,24 @@ import pytest
 import subprocess
 import time
 import os
+import sys
 from flask import Flask
-from routes.auth import auth_bp
+from pathlib import Path
+
+# Add backend/src to sys.path explicitly
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from routes.auth import auth_bp  
 import mysql.connector
 from pymongo import MongoClient
 
-# Load environment variables from a .env file or system (assumed to exist)
 from dotenv import load_dotenv
-
 load_dotenv()
 
-# Fixture to manage Docker Compose lifecycle
+DOCKER_COMPOSE_PATH = Path(__file__).parent.parent.parent.parent / "docker" / "docker-compose.yml"
+
 @pytest.fixture(scope="session", autouse=True)
 def docker_compose():
-    """Spin up Docker Compose services (MySQL and MongoDB) and tear them down after tests."""
-    # Start Docker Compose
-    subprocess.run(["docker-compose", "up", "-d"], check=True)
-
-    # Wait for databases to be ready
     max_attempts = 30
     attempt = 0
     mysql_ready = False
@@ -27,9 +27,7 @@ def docker_compose():
 
     while attempt < max_attempts and not (mysql_ready and mongo_ready):
         attempt += 1
-        time.sleep(2)  # Wait 2 seconds between attempts
-
-        # Check MySQL
+        time.sleep(2)
         try:
             conn = mysql.connector.connect(
                 host="localhost",
@@ -43,7 +41,6 @@ def docker_compose():
         except mysql.connector.Error:
             mysql_ready = False
 
-        # Check MongoDB
         try:
             client = MongoClient(
                 host="localhost",
@@ -52,7 +49,7 @@ def docker_compose():
                 password=os.getenv("MONGO_PASSWORD"),
                 authSource=os.getenv("MONGO_DATABASE")
             )
-            client.server_info()  # Test connection
+            client.server_info()
             client.close()
             mongo_ready = True
         except Exception:
@@ -61,27 +58,24 @@ def docker_compose():
     if not (mysql_ready and mongo_ready):
         raise Exception("Failed to start databases in time")
 
-    yield  # Run tests
+    yield
 
-    # Teardown: Stop and remove containers
-    subprocess.run(["docker-compose", "down", "-v"], check=True)
+    subprocess.run(
+        ["docker-compose", "-f", str(DOCKER_COMPOSE_PATH), "down", "-v"],
+        check=True
+    )
 
-# Fixture for Flask app
 @pytest.fixture
 def app():
-    """Create and configure a Flask app instance for testing."""
     app = Flask(__name__)
-    app.config['JWT'] = MockJWT()  # Mock JWT class (see below)
+    app.config['JWT'] = MockJWT()
     app.register_blueprint(auth_bp)
     return app
 
-# Fixture for Flask test client
 @pytest.fixture
 def client(app):
-    """Provide a test client for the Flask app."""
     return app.test_client()
 
-# Mock JWT class for testing
 class MockJWT:
     def __init__(self):
         self.blacklist = set()
@@ -99,11 +93,8 @@ class MockJWT:
     def blacklist_token(self, token):
         self.blacklist.add(token)
 
-# Fixture to reset database state before each test
 @pytest.fixture
 def reset_db():
-    """Reset MySQL and MongoDB to a clean state."""
-    # Reset MySQL
     conn = mysql.connector.connect(
         host="localhost",
         port=os.getenv("MYSQL_PORT", "3306"),
@@ -117,7 +108,6 @@ def reset_db():
     cursor.close()
     conn.close()
 
-    # Reset MongoDB
     client = MongoClient(
         host="localhost",
         port=int(os.getenv("MONGO_PORT", "27017")),
@@ -126,5 +116,5 @@ def reset_db():
         authSource=os.getenv("MONGO_DATABASE")
     )
     db = client[os.getenv("MONGO_DATABASE")]
-    db["history"].delete_many({"user_id": {"$ne": 1}})  # Keep test user's history
+    db["history"].delete_many({"user_id": {"$ne": 1}})
     client.close()

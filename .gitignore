@@ -17,6 +17,8 @@
 # Specific to src directory (if needed)
 src/**/*.env
 src/**/*.env.*
+**/.backend_venv
+
 
 # Test directories
 **/test/__pycache__
@@ -27,3 +29,4 @@ src/**/*.env.*
 
 # Root-level .vscode (if needed)
 .vscode
+
