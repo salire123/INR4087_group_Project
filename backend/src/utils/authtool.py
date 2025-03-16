@@ -35,6 +35,7 @@ class JWTManager:
         token = jwt.encode(token_payload, self.secret, algorithm=self.algorithm)
         return token
 
+
     def check_token(self, token: str) -> Dict[str, Any]:
         """
         检查 JWT Token 是否有效
@@ -50,9 +51,7 @@ class JWTManager:
                 return None
             payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
             return payload
-        except jwt.ExpiredSignatureError:
-            return None
-        except jwt.InvalidTokenError:
+        except Exception as e:
             return None
     
     def blacklist_token(self, token: str) -> None:

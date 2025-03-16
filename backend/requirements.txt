@@ -1,15 +1,7 @@
-# Core testing packages
-pytest>=7.0.0
-pytest-cov>=4.0.0
-
-# Web framework (choose one based on your project)
-flask
-jwt
-
-# Database connectivity (uncomment what you need)
-mysql-connector-python # For MySQL
-pymongo  # For MongoDB
-
-# Utility packages
-requests
-python-dotenv
+Flask==3.1.0
+mysql_connector_repackaged==0.3.1
+PyJWT==2.10.1
+pymongo==4.11.2
+pytest==8.3.5
+python-dotenv==1.0.1
+Werkzeug==3.1.3

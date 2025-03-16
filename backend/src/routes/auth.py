@@ -19,13 +19,16 @@ def login():
     token = request.headers.get("Authorization")
 
     # check if the user is already logged in
-    if token:
-        token = token.split(" ")[1]
-        payload = current_app.config['JWT'].check_token(token)
-        if payload is not None and payload.get("username") == username:
-            return jsonify({"message": "User already logged in"}), 200
-        if payload is not None:
-            return jsonify({"message": "Invalid token"}), 401
+    try:
+        if token:
+            token = token.split(" ")[1]
+            payload = current_app.config['JWT'].check_token(token)
+            if payload is not None and payload.get("username") == username:
+                return jsonify({"message": "User already logged in"}), 200
+            if payload is not None:
+                return jsonify({"message": "Invalid token"}), 401
+    except Exception as e:
+        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
     
     try:

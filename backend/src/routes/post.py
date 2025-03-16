@@ -53,19 +53,52 @@ def create_post():
 
 @post_bp.route("/get_posts", methods=["GET"])
 def get_posts():
-    '''Get a paginated list of posts'''
+    '''Get a filtered, paginated list of posts'''
     try:
         post_page = int(request.args.get("page", 1))
         post_per_page = int(request.args.get("per_page", 10))
+        user_id = request.args.get("user_id")  # Filter by user
+        search_term = request.args.get("search")  # Search in title or content
+        
         if post_page < 1 or post_per_page < 1:
             return jsonify({"message": "Page and per_page must be positive integers"}), 400
+            
+        # Build query filters
+        query = {}
+        
+        if user_id:
+            # Try to convert to int for user_id (if stored as int)
+            try:
+                user_id = int(user_id)
+            except ValueError:
+                pass
+            query["user_id"] = user_id
+            
+        if search_term:
+            # Text search in title and content
+            query["$or"] = [
+                {"title": {"$regex": search_term, "$options": "i"}},  # Case-insensitive search
+                {"content": {"$regex": search_term, "$options": "i"}}
+            ]
 
         with connect_mongo() as mongo_client:
             db = mongo_client
             collection = db["posts"]
-            posts = collection.find().skip((post_page - 1) * post_per_page).limit(post_per_page)
-            posts_list = [dict(post, _id=str(post["_id"])) for post in posts]  # Convert ObjectId to string
-            return jsonify({"posts": posts_list}), 200
+            posts = collection.find(query).sort("created_at", -1).skip((post_page - 1) * post_per_page).limit(post_per_page)
+            posts_list = [dict(post, _id=str(post["_id"])) for post in posts]
+            
+            # Get filtered count
+            total_posts = collection.count_documents(query)
+            
+            return jsonify({
+                "posts": posts_list,
+                "pagination": {
+                    "total": total_posts,
+                    "page": post_page,
+                    "per_page": post_per_page,
+                    "pages": (total_posts + post_per_page - 1) // post_per_page  # Ceiling division
+                }
+            }), 200
     except ValueError:
         return jsonify({"message": "Invalid page or per_page value"}), 400
     except Exception as e:
