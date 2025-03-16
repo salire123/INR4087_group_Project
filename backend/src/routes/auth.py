@@ -6,17 +6,18 @@ from utils.db import connect_mysql, connect_mongo
 
 from contextlib import contextmanager
 
-
+import traceback
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route("/login", methods=["POST"])
 # for login, we need to check if the user exists in the database
 def login():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+
+    username = request.form.get("username")
+    password = request.form.get("password")
     token = request.headers.get("Authorization")
+
 
     # check if the user is already logged in
     try:
@@ -27,11 +28,7 @@ def login():
                 return jsonify({"message": "User already logged in"}), 200
             if payload is not None:
                 return jsonify({"message": "Invalid token"}), 401
-    except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
 
-    
-    try:
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT password FROM users WHERE username = %s", (username,))
             result = cursor.fetchone()
@@ -46,17 +43,21 @@ def login():
                 return jsonify({"message": "Invalid password"}), 400
             
     except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
+
         
  
 
 @auth_bp.route("/register", methods=["POST"])
 # for registration, we need to insert the user into the database
 def register():
-    data        = request.get_json()  
-    email       = data.get("email")
-    username    = data.get("username")
-    password    = data.get("password")
+    username = request.form.get("username")
+    password = request.form.get("password")
+    email = request.form.get("email")
 
     try:
         with connect_mysql() as (cursor, connection):
@@ -99,7 +100,11 @@ def register():
                             }), 201
     
     except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
 
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -117,7 +122,11 @@ def logout():
         return jsonify({"message": "User logged out successfully"}), 200
     
     except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
 
 
 @auth_bp.route("/renew_token", methods=["POST"])
@@ -138,4 +147,8 @@ def renew_token():
         current_app.config['JWT'].blacklist_token(token)
         return jsonify({"token": new_token}), 200
     except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500

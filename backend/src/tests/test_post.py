@@ -22,7 +22,7 @@ MOCK_POST = {
 
 def test_create_post_missing_token(client):
     """Test creating a post without auth token"""
-    response = client.post('/api/create_post', json={
+    response = client.post('/api/create_post', data={
         "title": "Test Post",
         "content": "Test Content"
     })
@@ -34,7 +34,7 @@ def test_create_post_missing_fields(client, auth_headers):
     """Test creating a post with missing required fields"""
     response = client.post('/api/create_post', 
                           headers=auth_headers(),
-                          json={
+                          data={
                               "title": "",
                               "content": ""
                           })
@@ -45,15 +45,17 @@ def test_create_post_missing_fields(client, auth_headers):
 def test_create_post_invalid_token(client, mock_jwt, auth_headers):
     """Test creating a post with invalid auth token"""
     mock_jwt.check_token.return_value = None
-    response = client.post('/api/create_post', 
-                          headers=auth_headers('invalid_token'),
-                          json={
-                              "title": "Test Post",
-                              "content": "Test Content"
-                          })
+    response = client.post(
+        '/api/create_post',  # Ensure this matches your Blueprint's registered prefix
+        headers=auth_headers('invalid_token'),
+        data={
+            "title": "Test Post",
+            "content": "Test Content"
+        },
+        content_type='multipart/form-data'
+    )
     assert response.status_code == 401
     assert response.json['message'] == "Invalid token"
-
 
 def test_create_post_user_not_found(client, mock_jwt, auth_headers):
     """Test creating a post with valid token but non-existent user"""
@@ -64,12 +66,15 @@ def test_create_post_user_not_found(client, mock_jwt, auth_headers):
         mock_cursor.fetchone.return_value = None
         mock_connect.return_value.__enter__.return_value = (mock_cursor, MagicMock())
         
-        response = client.post('/api/create_post', 
-                              headers=auth_headers(),
-                              json={
-                                  "title": "Test Post",
-                                  "content": "Test Content"
-                              })
+        response = client.post(
+            '/api/create_post',
+            headers=auth_headers(),
+            data={
+                "title": "Test Post",
+                "content": "Test Content"
+            },
+            content_type='multipart/form-data'
+        )
         
         assert response.status_code == 404
         assert response.json['message'] == "User not found"
@@ -77,30 +82,56 @@ def test_create_post_user_not_found(client, mock_jwt, auth_headers):
 
 def test_create_post_success(client, mock_jwt, auth_headers):
     """Test successful post creation"""
+    # Setup JWT mock to return valid username
     mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
     
-    with patch('routes.post.connect_mysql') as mock_mysql, patch('routes.post.connect_mongo') as mock_mongo:
-        # MySQL mock to return user ID
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = [MOCK_USER_ID]
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
+    # Create a cursor mock that properly returns user ID when fetchone() is called
+    mock_cursor = MagicMock()
+    mock_cursor.fetchone.return_value = (MOCK_USER_ID,)  # Note: Return as tuple with single element
+    mock_db_connection = MagicMock()
+    
+    # Create context manager that returns our mocked cursor and connection
+    mock_mysql_cm = MagicMock()
+    mock_mysql_cm.__enter__.return_value = (mock_cursor, mock_db_connection)
+    
+    # Create MongoDB mocks
+    mock_collection = MagicMock()
+    mock_collection.insert_one.return_value.inserted_id = ObjectId(MOCK_POST_ID)
+    mock_mongo_db = MagicMock()
+    mock_mongo_db.__getitem__.return_value = mock_collection
+    mock_mongo_cm = MagicMock()
+    mock_mongo_cm.__enter__.return_value = mock_mongo_db
+    
+    # MinIO client mock
+    mock_minio_client = MagicMock()
+    mock_minio_client.list_buckets.return_value = {"Buckets": [{"Name": "media"}]}
+    mock_minio_cm = MagicMock()
+    mock_minio_cm.__enter__.return_value = mock_minio_client
+    
+    # Patch all database connections
+    with patch('routes.post.connect_mysql', return_value=mock_mysql_cm) as mock_mysql, \
+         patch('routes.post.connect_mongo', return_value=mock_mongo_cm) as mock_mongo, \
+         patch('routes.post.connect_Minio', return_value=mock_minio_cm) as mock_minio:
         
-        # MongoDB mock for successful insertion
-        mock_collection = MagicMock()
-        mock_collection.insert_one.return_value.inserted_id = ObjectId(MOCK_POST_ID)
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_mongo.return_value.__enter__.return_value = mock_db
+        # Make request
+        response = client.post(
+            '/api/create_post',
+            headers=auth_headers(),
+            data={
+                "title": "Test Post",
+                "content": "Test Content",
+                "media_url": "http://example.com/image.jpg"
+            },
+            content_type='multipart/form-data'
+        )
         
-        response = client.post('/api/create_post', 
-                              headers=auth_headers(),
-                              json={
-                                  "title": "Test Post",
-                                  "content": "Test Content",
-                                  "media_url": "http://example.com/image.jpg"
-                              })
+        # Check if patching worked properly 
+        assert mock_mysql.called, "connect_mysql was not called"
+        assert mock_cursor.execute.called, "cursor.execute was not called"
+        assert mock_cursor.fetchone.called, "cursor.fetchone was not called"
         
-        assert response.status_code == 200
+        # Check response
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.data}"
         assert response.json['message'] == "Post created"
         assert response.json['post_id'] == MOCK_POST_ID
 
@@ -304,7 +335,7 @@ def test_delete_post_success(client, mock_jwt, auth_headers):
 
 def test_create_comment_missing_token(client):
     """Test creating a comment without auth token"""
-    response = client.post('/api/create_comment', json={
+    response = client.post('/api/create_comment', data={
         "post_id": MOCK_POST_ID,
         "comment": "Test Comment"
     })
@@ -316,7 +347,7 @@ def test_create_comment_missing_fields(client, auth_headers):
     """Test creating a comment with missing required fields"""
     response = client.post('/api/create_comment',
                           headers=auth_headers(),
-                          json={
+                          data={
                               "post_id": "",
                               "comment": ""
                           })
@@ -343,7 +374,7 @@ def test_create_comment_success(client, mock_jwt, auth_headers):
         
         response = client.post('/api/create_comment',
                               headers=auth_headers(),
-                              json={
+                              data={
                                   "post_id": MOCK_POST_ID,
                                   "comment": "Test Comment"
                               })

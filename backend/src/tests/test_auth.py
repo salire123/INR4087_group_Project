@@ -25,7 +25,7 @@ def test_login_user_not_found(client):
         
         response = client.post(
             '/api/login',
-            json={'username': 'nonexistent', 'password': 'password'}
+            data={'username': 'nonexistent', 'password': 'password'}
         )
         
         assert response.status_code == 404
@@ -44,7 +44,7 @@ def test_login_invalid_password(client):
         # Force password check to fail
         mock_check.return_value = False
         
-        response = client.post('/api/login', json={'username': 'user', 'password': 'wrong_password'})
+        response = client.post('/api/login', data={'username': 'user', 'password': 'wrong_password'})
         
         assert response.status_code == 400
         assert response.json['message'] == 'Invalid password'
@@ -68,7 +68,7 @@ def test_login_success(client, mock_jwt):
         mock_jwt.generate_token.return_value = 'new_token'
         
         # Make the request
-        response = client.post('/api/login', json={
+        response = client.post('/api/login', data={
             'username': 'user',
             'password': 'correct_password'
         })
@@ -88,7 +88,7 @@ def test_register_user_exists(client):
         mock_cursor.fetchone.return_value = True
         mock_connect.return_value.__enter__.return_value = (mock_cursor, MagicMock())
         
-        response = client.post('/api/register', json={
+        response = client.post('/api/register', data={
             'username': 'user', 
             'email': 'user@example.com', 
             'password': 'password'
@@ -110,15 +110,16 @@ def test_register_success(client):
         
         mock_mongo.return_value.__enter__.return_value = MagicMock()
         
-        response = client.post('/api/register', json={
+        # Changed from json parameter to data parameter for form data
+        response = client.post('/api/register', data={
             'username': 'user', 
             'email': 'user@example.com', 
             'password': 'password'
         })
         
         assert response.status_code == 201
-        assert response.json['message'] == 'User created successfully'
-        assert response.json['user_id'] == 1
+        assert response.json.get('message') == 'User created successfully'
+        assert response.json.get('user_id') == 1
 
 
 def test_logout_missing_token(client):

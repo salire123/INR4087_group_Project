@@ -1,8 +1,7 @@
 from flask import Flask
-from routes.auth import auth_bp
-from routes.post import post_bp
-from routes.history import history_bp
-from utils.authtool import JWTManager
+from routes import *
+
+from utils import *
 from dotenv import load_dotenv
 
 import os

@@ -5,6 +5,8 @@ import pymongo
 import os
 from dotenv import load_dotenv
 from contextlib import contextmanager
+import boto3
+from botocore.client import Config
 
 @contextmanager
 def connect_mysql():
@@ -44,3 +46,27 @@ def connect_mongo():
     finally:
         if client:
             client.close()
+
+@contextmanager
+#Minio connection
+def connect_Minio():
+    load_dotenv()
+    try:
+        minioClient = boto3.client('s3',
+            endpoint_url=os.getenv("MINIO_ENDPOINT"),
+            aws_access_key_id=os.getenv("MINIO_ACCESS_KEY"),
+            aws_secret_access_key=os.getenv("MINIO_SECRET_KEY"),
+            config=Config(signature_version='s3v4')
+        )
+        bucket_name = os.getenv("MINIO_BUCKET")
+        url = f"{os.getenv('MINIO_ENDPOINT')}/{bucket_name}"
+        yield minioClient, bucket_name, url
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise
+
+        
+            
+    
+
+    

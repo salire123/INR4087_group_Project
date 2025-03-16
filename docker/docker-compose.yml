@@ -15,6 +15,8 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "${MYSQL_PORT}:3306"  
+    networks:
+        - project-network
 
   mongodb:
     image: mongo:latest
@@ -28,7 +30,28 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
     ports:
       - "${MONGO_PORT}:27017"
+    networks:
+        - project-network
+
+  minio:
+      image: minio/minio:latest
+      ports:
+        - "9000:9000"  # MinIO API
+        - "9001:9001"  # MinIO Console
+      environment:
+        - MINIO_ROOT_USER=admin
+        - MINIO_ROOT_PASSWORD=password
+      command: server /data --console-address ":9001"
+      volumes:
+        - minio-data:/data
+      networks:
+        - project-network
+
+networks:
+  project-network:
+    driver: bridge
 
 volumes:
   mysql-data:
   mongodb-data:
+  minio-data:

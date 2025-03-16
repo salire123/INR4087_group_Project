@@ -1,21 +1,21 @@
 from flask import Blueprint, request, jsonify, current_app
-from datetime import datetime
+from datetime import datetime, timezone
 from bson.objectid import ObjectId
 from contextlib import contextmanager
 
-from utils.db import connect_mysql, connect_mongo
+from utils.db import connect_mysql, connect_mongo, connect_Minio
+import traceback
 
 post_bp = Blueprint('post', __name__)
 
 
 @post_bp.route("/create_post", methods=["POST"])
 def create_post():
-    '''Create a new post'''
-    data = request.get_json()
+    '''Create a new post with optional media file upload'''
     token = request.headers.get("Authorization")
-    title = data.get("title", "").strip()
-    media_url = data.get("media_url", "").strip()
-    content = data.get("content", "").strip()
+    title = request.form.get("title", "").strip()  # Use form data instead of JSON
+    content = request.form.get("content", "").strip()
+    media_file = request.files.get("media_file")  # File from multipart/form-data
 
     if not token:
         return jsonify({"message": "Token is required"}), 400
@@ -33,23 +33,40 @@ def create_post():
             if not result:
                 return jsonify({"message": "User not found"}), 404
             user_id = result[0]
-        
+
+        media_url = ""
+        if media_file:
+            # Upload to connect_Minio
+            with connect_Minio() as (connect_Minio_client, bucket_name, url):
+                # Ensure bucket exists
+                if not connect_Minio_client.list_buckets() or bucket_name not in [b["Name"] for b in connect_Minio_client.list_buckets()["Buckets"]]:
+                    connect_Minio_client.create_bucket(Bucket=bucket_name)
+                
+                # Generate a unique object name (e.g., using timestamp and original filename)
+                filename = f"{user_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{media_file.filename}"
+                connect_Minio_client.upload_fileobj(media_file, bucket_name, filename)
+                # Construct the connect_Minio URL (adjust based on your connect_Minio endpoint)
+                media_url = f"{url}/{bucket_name}/{filename}"
+
         with connect_mongo() as mongo_client:
             db = mongo_client
             collection = db["posts"]
             post = {
                 "title": title,
-                "media_url": media_url,
+                "media_url": media_url,  # Store connect_Minio URL
                 "content": content,
                 "user_id": user_id,
                 "comments": [],
-                "comment_count": 0,  # Initialize comment count
-                "created_at": datetime.utcnow()
+                "comment_count": 0,
+                "created_at": datetime.now(timezone.utc)
             }
             result = collection.insert_one(post)
             return jsonify({"message": "Post created", "post_id": str(result.inserted_id)}), 200
+
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Error creating post: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred while creating the post"}), 500
 
 @post_bp.route("/get_posts", methods=["GET"])
 def get_posts():
@@ -102,7 +119,11 @@ def get_posts():
     except ValueError:
         return jsonify({"message": "Invalid page or per_page value"}), 400
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
 
 @post_bp.route("/get_post", methods=["GET"])
 def get_post():
@@ -121,7 +142,11 @@ def get_post():
             post["_id"] = str(post["_id"])  # Convert ObjectId to string
             return jsonify({"post": post}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
 
 @post_bp.route("/delete_post", methods=["DELETE"])
 def delete_post():
@@ -157,17 +182,20 @@ def delete_post():
             collection.delete_one({"_id": ObjectId(post_id)})
             return jsonify({"message": "Post deleted"}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
 
 @post_bp.route("/update_post", methods=["PUT"])
 def update_post():
-    '''Update a post by post_id'''
+    '''Update a post by post_id with optional media file replacement'''
     post_id = request.args.get("post_id")
     token = request.headers.get("Authorization")
-    data = request.get_json()
-    title = data.get("title", "").strip()
-    media_url = data.get("media_url", "").strip()
-    content = data.get("content", "").strip()
+    title = request.form.get("title", "").strip()  # Use form data
+    content = request.form.get("content", "").strip()
+    media_file = request.files.get("media_file")  # New file to upload
 
     if not token:
         return jsonify({"message": "Token is required"}), 400
@@ -194,25 +222,44 @@ def update_post():
                 return jsonify({"message": "Post not found"}), 404
             if post["user_id"] != user_id:
                 return jsonify({"message": "Unauthorized"}), 403
+
             update_data = {}
             if title:
                 update_data["title"] = title
-            if media_url:
-                update_data["media_url"] = media_url
             if content:
                 update_data["content"] = content
-            collection.update_one({"_id": ObjectId(post_id)}, {"$set": update_data})
-            return jsonify({"message": "Post updated"}), 200
+
+            # Handle media file update
+            if media_file:
+                # Upload to connect_Minio
+                with connect_Minio() as (connect_Minio_client, bucket_name, url):
+                    # Ensure bucket exists
+                    if not connect_Minio_client.list_buckets() or bucket_name not in [b["Name"] for b in connect_Minio_client.list_buckets()["Buckets"]]:
+                        connect_Minio_client.create_bucket(Bucket=bucket_name)
+                    
+                    # Generate a unique object name (e.g., using timestamp and original filename)
+                    filename = f"{user_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{media_file.filename}"
+                    connect_Minio_client.upload_fileobj(media_file, bucket_name, filename)
+                    # Update media_url with new connect_Minio URL
+                    update_data["media_url"] = f"{url}/{bucket_name}/{filename}"
+
+            if update_data:
+                collection.update_one({"_id": ObjectId(post_id)}, {"$set": update_data})
+                return jsonify({"message": "Post updated"}), 200
+            else:
+                return jsonify({"message": "No changes provided"}), 400
+
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Error updating post: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred while updating the post"}), 500
 
 @post_bp.route("/create_comment", methods=["POST"])
 def create_comment():
     '''Create a comment on a post'''
-    data = request.get_json()
     token = request.headers.get("Authorization")
-    post_id = data.get("post_id")
-    comment = data.get("comment", "").strip()
+    post_id = request.form.get("post_id")
+    comment = request.form.get("comment", "").strip()
 
     if not token:
         return jsonify({"message": "Token is required"}), 400
@@ -251,8 +298,9 @@ def create_comment():
                 return jsonify({"message": "Post not found"}), 404
             return jsonify({"message": "Comment created"}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        # Log the full error with traceback
+        
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
     
-@post_bp.route("/<string:post_id>/like", methods=["GET"])
-def like_post(post_id):
-    '''create a like on user history'''

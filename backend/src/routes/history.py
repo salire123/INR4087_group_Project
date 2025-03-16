@@ -6,6 +6,7 @@ from contextlib import contextmanager
 
 history_bp = Blueprint('history', __name__)
 
+import traceback
 
 
 
@@ -30,14 +31,18 @@ def get_history(username):
                 response.append(post)
             return jsonify({"history": response}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
     
 @history_bp.route('/add_read_history', methods=['POST'])
 def add_read_history():
     '''Add a post to the user's history'''
-    data = request.get_json()
-    post_id = data.get("post_id")
-    username = data.get("username")
+
+
+    post_id = request.form.get("post_id")
+    username  = request.form.get("username")
+
 
     #token check
     token = request.headers.get("Authorization")
@@ -47,16 +52,13 @@ def add_read_history():
         payload = current_app.config['JWT'].check_token(token)
         if payload is None or "username" not in payload:
             return jsonify({"message": "Invalid token"}), 401
-    except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-    
-    
-    if not post_id:
-        return jsonify({"message": "Post ID is required"}), 400
-    if not username:
-        return jsonify({"message": "Username is required"}), 400
-    
-    try:
+
+
+        if not post_id:
+            return jsonify({"message": "Post ID is required"}), 400
+        if not username:
+            return jsonify({"message": "Username is required"}), 400
+
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
             result = cursor.fetchone()
@@ -70,14 +72,17 @@ def add_read_history():
             collection.insert_one({"user_id": user_id, "post_id": post_id, "timestamp": datetime.now()})
             return jsonify({"message": "History added"}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
+    
 
 @history_bp.route('/add_like', methods=['POST'])
 def add_like():
     '''Add a like to a post'''
-    data = request.get_json()
-    post_id = data.get("post_id")
-    username = data.get("username")
+    post_id = request.form.get("post_id")
+    username  = request.form.get("username")
+
 
     #token check
     token = request.headers.get("Authorization")
@@ -87,16 +92,12 @@ def add_like():
         payload = current_app.config['JWT'].check_token(token)
         if payload is None or "username" not in payload:
             return jsonify({"message": "Invalid token"}), 401
-    except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
+
+        if not post_id:
+            return jsonify({"message": "Post ID is required"}), 400
+        if not username:
+            return jsonify({"message": "Username is required"}), 400
     
-    
-    if not post_id:
-        return jsonify({"message": "Post ID is required"}), 400
-    if not username:
-        return jsonify({"message": "Username is required"}), 400
-    
-    try:
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
             result = cursor.fetchone()
@@ -110,15 +111,18 @@ def add_like():
             collection.update_one({"user_id": user_id, "post_id": post_id}, {"$addToSet": {"likes": user_id}})
             return jsonify({"message": "Like added"}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500
     
 
 @history_bp.route('/remove_like', methods=['POST'])
 def remove_like():
     '''Remove a like from a post'''
-    data = request.get_json()
-    post_id = data.get("post_id")
-    username = data.get("username")
+    
+    post_id = request.form.get("post_id")
+    username  = request.form.get("username")
+
 
     #token check
     token = request.headers.get("Authorization")
@@ -128,16 +132,12 @@ def remove_like():
         payload = current_app.config['JWT'].check_token(token)
         if payload is None or "username" not in payload:
             return jsonify({"message": "Invalid token"}), 401
-    except Exception as e:
-        return jsonify({"message": f"An error occurred: {str(e)}"}), 500
-    
-    
-    if not post_id:
-        return jsonify({"message": "Post ID is required"}), 400
-    if not username:
-        return jsonify({"message": "Username is required"}), 400
-    
-    try:
+
+        if not post_id:
+            return jsonify({"message": "Post ID is required"}), 400
+        if not username:
+            return jsonify({"message": "Username is required"}), 400
+
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (username,))
             result = cursor.fetchone()
@@ -151,4 +151,6 @@ def remove_like():
             collection.update_one({"user_id": user_id, "post_id": post_id}, {"$pull": {"likes": user_id}})
             return jsonify({"message": "Like removed"}), 200
     except Exception as e:
-        return jsonify({"message": str(e)}), 500
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred during authentication"}), 500

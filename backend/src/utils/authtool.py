@@ -21,20 +21,25 @@ class JWTManager:
 
     def generate_token(self, payload: Dict[str, Any], expiration: int) -> str:
         """
-        生成 JWT Token
+        Generate JWT Token
         
         Args:
-            payload (Dict[str, Any]): 要编码的数据（例如用户信息）
-            expiration (int): Token 过期时间（秒）
+            payload (Dict[str, Any]): Data to encode (e.g., user information)
+            expiration (int): Token expiration time in seconds
         
         Returns:
-            str: 生成的 JWT Token
+            str: Generated JWT token
         """
         token_payload = payload.copy()
         token_payload["exp"] = datetime.utcnow() + timedelta(seconds=expiration)
+        
+        # PyJWT encode returns bytes in newer versions (3.x), so we convert to string
         token = jwt.encode(token_payload, self.secret, algorithm=self.algorithm)
+        
+        # If jwt.encode returns bytes, decode to string
+        if isinstance(token, bytes):
+            return token.decode('utf-8')
         return token
-
 
     def check_token(self, token: str) -> Dict[str, Any]:
         """
