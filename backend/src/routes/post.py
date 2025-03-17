@@ -36,7 +36,7 @@ def create_post():
             if not result:
                 return jsonify({"message": "User not found"}), 404
             user_id = result[0]
-
+        
         media_url = ""
         if media_file:
             # Upload to MinIO
