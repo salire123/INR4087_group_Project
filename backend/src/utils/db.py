@@ -5,8 +5,7 @@ import pymongo
 import os
 from dotenv import load_dotenv
 from contextlib import contextmanager
-import boto3
-from botocore.client import Config
+from minio import Minio
 
 @contextmanager
 def connect_mysql():
@@ -52,11 +51,10 @@ def connect_mongo():
 def connect_Minio():
     load_dotenv()
     try:
-        minioClient = boto3.client('s3',
-            endpoint_url=os.getenv("MINIO_ENDPOINT"),
-            aws_access_key_id=os.getenv("MINIO_ACCESS_KEY"),
-            aws_secret_access_key=os.getenv("MINIO_SECRET_KEY"),
-            config=Config(signature_version='s3v4')
+        minioClient = Minio(os.getenv("MINIO_ENDPOINT"),
+            access_key=os.getenv("MINIO_ACCESS_KEY"),
+            secret_key=os.getenv("MINIO_SECRET_KEY"),
+            secure=False
         )
         bucket_name = os.getenv("MINIO_BUCKET")
         url = f"{os.getenv('MINIO_ENDPOINT')}/{bucket_name}"

@@ -1,350 +1,270 @@
 import pytest
+import json
 from unittest.mock import patch, MagicMock
 from datetime import datetime
 from bson.objectid import ObjectId
-
-# Mock data
-MOCK_POST_ID = "507f1f77bcf86cd799439011"
-MOCK_USER_ID = 42
-MOCK_USERNAME = "testuser"
+from app import app
+from utils.db import connect_mysql, connect_mongo
 
 
-def test_get_history_user_not_found(client):
-    """Test getting history for non-existent user"""
-    with patch('routes.history.connect_mysql') as mock_mysql:
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = None
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
-        
-        response = client.get(f'/api/history/{MOCK_USERNAME}')
-        
-        assert response.status_code == 404
-        assert response.json['message'] == "User not found"
+@pytest.fixture
+def client():
+    """Create a test client for the app."""
+    with app.test_client() as client:
+        yield client
 
 
-def test_get_history_success(client):
-    """Test successful history retrieval"""
-    mock_history = [
-        {
-            "_id": ObjectId(MOCK_POST_ID),
-            "user_id": MOCK_USER_ID,
-            "post_id": "507f1f77bcf86cd799439012",
-            "timestamp": datetime.now()
-        },
-        {
-            "_id": ObjectId("507f1f77bcf86cd799439013"),
-            "user_id": MOCK_USER_ID,
-            "post_id": "507f1f77bcf86cd799439014",
-            "timestamp": datetime.now()
-        }
-    ]
+@pytest.fixture
+def mock_jwt_check():
+    """Mock JWT token verification"""
+    # Create a mock JWT manager object
+    mock_jwt = MagicMock()
+    mock_jwt.check_token.return_value = {"username": "testuser"}
     
-    with patch('routes.history.connect_mysql') as mock_mysql, \
-         patch('routes.history.connect_mongo') as mock_mongo:
-        
-        # Mock MySQL to return user ID
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = [MOCK_USER_ID]
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
-        
-        # Mock MongoDB to return history items
-        mock_collection = MagicMock()
-        mock_collection.find.return_value = mock_history
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_mongo.return_value.__enter__.return_value = mock_db
-        
-        response = client.get(f'/api/history/{MOCK_USERNAME}')
-        
-        assert response.status_code == 200
-        assert len(response.json['history']) == 2
-        # Check that ObjectId was converted to string
-        assert isinstance(response.json['history'][0]['_id'], str)
+    # Save the original JWT manager
+    original_jwt = app.config.get("JWT")
+    
+    # Replace with our mock
+    app.config["JWT"] = mock_jwt
+    
+    yield mock_jwt
+    
+    # Restore original after test
+    app.config["JWT"] = original_jwt
 
 
-def test_add_read_history_missing_token(client):
-    """Test adding read history without auth token"""
-    response = client.post('/api/add_read_history', data={
-        "post_id": MOCK_POST_ID,
-        "username": MOCK_USERNAME
-    })
-    assert response.status_code == 400
-    assert response.json['message'] == "Token is required"
-
-
-def test_add_read_history_invalid_token(client, mock_jwt, auth_headers):
-    """Test adding read history with invalid auth token"""
-    mock_jwt.check_token.return_value = None
-    response = client.post(
-        '/api/add_read_history',
-        headers=auth_headers('invalid_token'),
-        data={
-            "post_id": MOCK_POST_ID,
-            "username": MOCK_USERNAME
-        }
-    )
-    assert response.status_code == 401
-    assert response.json['message'] == "Invalid token"
-
-
-def test_add_read_history_missing_post_id(client, mock_jwt, auth_headers):
-    """Test adding read history without post ID"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
-    response = client.post(
-        '/api/add_read_history',
-        headers=auth_headers(),
-        data={
-            "username": MOCK_USERNAME
-        }
-    )
-    assert response.status_code == 400
-    assert response.json['message'] == "Post ID is required"
-
-
-def test_add_read_history_missing_username(client, mock_jwt, auth_headers):
-    """Test adding read history without username"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
-    response = client.post(
-        '/api/add_read_history',
-        headers=auth_headers(),
-        data={
-            "post_id": MOCK_POST_ID
-        }
-    )
-    assert response.status_code == 400
-    assert response.json['message'] == "Username is required"
-
-
-def test_add_read_history_user_not_found(client, mock_jwt, auth_headers):
-    """Test adding read history for non-existent user"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
+@pytest.fixture
+def mock_db_connections():
+    """Mock database connections"""
+    mysql_cursor = MagicMock()
+    mysql_connection = MagicMock()
+    mongo_db = MagicMock()
+    
+    # Configure MySQL mock to return user_id=1 for testuser
+    mysql_cursor.fetchone.return_value = (1,)
     
     with patch('routes.history.connect_mysql') as mock_mysql:
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = None
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
-        
-        response = client.post(
-            '/api/add_read_history',
-            headers=auth_headers(),
-            data={
-                "post_id": MOCK_POST_ID,
-                "username": MOCK_USERNAME
-            }
-        )
-        
-        assert response.status_code == 404
-        assert response.json['message'] == "User not found"
+        mock_mysql.return_value.__enter__.return_value = (mysql_cursor, mysql_connection)
+        with patch('routes.history.connect_mongo') as mock_mongo:
+            mock_mongo.return_value.__enter__.return_value = mongo_db
+            yield mysql_cursor, mysql_connection, mongo_db
 
 
-def test_add_read_history_success(client, mock_jwt, auth_headers):
-    """Test successful read history addition"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
+class TestHistoryRoutes:
     
-    with patch('routes.history.connect_mysql') as mock_mysql, \
-         patch('routes.history.connect_mongo') as mock_mongo:
+    def test_get_history_like_success(self, client, mock_db_connections):
+        """Test successful retrieval of history and likes."""
+        _, _, mongo_db = mock_db_connections
         
-        # Mock MySQL to return user ID
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = [MOCK_USER_ID]
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
-        
-        # Mock MongoDB for successful insertion
-        mock_collection = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_mongo.return_value.__enter__.return_value = mock_db
-        
-        response = client.post(
-            '/api/add_read_history',
-            headers=auth_headers(),
-            data={
-                "post_id": MOCK_POST_ID,
-                "username": MOCK_USERNAME
-            }
-        )
-        
-        assert response.status_code == 200
-        assert response.json['message'] == "History added"
-        mock_collection.insert_one.assert_called_once()
-
-
-def test_add_like_missing_token(client):
-    """Test adding like without auth token"""
-    response = client.post('/api/add_like', data={
-        "post_id": MOCK_POST_ID,
-        "username": MOCK_USERNAME
-    })
-    assert response.status_code == 400
-    assert response.json['message'] == "Token is required"
-
-
-def test_add_like_invalid_token(client, mock_jwt, auth_headers):
-    """Test adding like with invalid auth token"""
-    mock_jwt.check_token.return_value = None
-    response = client.post(
-        '/api/add_like',
-        headers=auth_headers('invalid_token'),
-        data={
-            "post_id": MOCK_POST_ID,
-            "username": MOCK_USERNAME
+        # Mock MongoDB find_one response
+        history_data = {
+            "_id": ObjectId("6075b792d51c5b5e6c3a1234"),
+            "user_id": 1,
+            "history": [
+                {"post_id": ObjectId("6075b7a2d51c5b5e6c3a5678"), "timestamp": datetime.now()}
+            ],
+            "likes": [
+                {"post_id": ObjectId("6075b7b2d51c5b5e6c3a9abc"), "timestamp": datetime.now()}
+            ]
         }
-    )
-    assert response.status_code == 401
-    assert response.json['message'] == "Invalid token"
+        mongo_db["history_like"].find_one.return_value = history_data
+        
+        response = client.get('/history/get_history_like?username=testuser')
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert isinstance(data["_id"], str)  # ObjectId converted to string
+        assert isinstance(data["history"][0]["post_id"], str)
+        assert isinstance(data["likes"][0]["post_id"], str)
 
+    def test_get_history_like_user_not_found(self, client, mock_db_connections):
+        """Test history retrieval for non-existent user."""
+        mysql_cursor, _, _ = mock_db_connections
+        mysql_cursor.fetchone.return_value = None
+        
+        response = client.get('/history/get_history_like?username=nonexistent')
+        
+        assert response.status_code == 404
+        assert json.loads(response.data)["message"] == "User not found"
 
-def test_add_like_user_not_found(client, mock_jwt, auth_headers):
-    """Test adding like for non-existent user"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
-    
-    with patch('routes.history.connect_mysql') as mock_mysql:
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = None
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
+    def test_get_history_like_no_history(self, client, mock_db_connections):
+        """Test case when user has no history."""
+        _, _, mongo_db = mock_db_connections
+        mongo_db["history_like"].find_one.return_value = None
+        
+        response = client.get('/history/get_history_like?username=testuser')
+        
+        assert response.status_code == 404
+        assert json.loads(response.data)["message"] == "No history found"
+
+    def test_add_read_history_new_entry(self, client, mock_jwt_check, mock_db_connections):
+        """Test adding a new item to read history."""
+        _, _, mongo_db = mock_db_connections
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Mock: Post not already in history
+        mongo_db["history_like"].find_one.return_value = None
         
         response = client.post(
-            '/api/add_like',
-            headers=auth_headers(),
-            data={
-                "post_id": MOCK_POST_ID,
-                "username": MOCK_USERNAME
-            }
+            f'/history/add_read_history?post_id={post_id}',
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        
+        assert response.status_code == 200
+        assert json.loads(response.data)["message"] == "History added"
+        
+        # Verify the update_one call with $push
+        mongo_db["history_like"].update_one.assert_called_once()
+        call_args = mongo_db["history_like"].update_one.call_args[0]
+        assert call_args[0] == {"user_id": 1}
+        assert "$push" in call_args[1]
+
+    def test_add_read_history_update_existing(self, client, mock_jwt_check, mock_db_connections):
+        """Test updating timestamp of existing history item."""
+        _, _, mongo_db = mock_db_connections
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Mock: Post already in history
+        mongo_db["history_like"].find_one.return_value = {
+            "user_id": 1,
+            "history": [{"post_id": post_id, "timestamp": datetime.now()}]
+        }
+        
+        response = client.post(
+            f'/history/add_read_history?post_id={post_id}',
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        
+        assert response.status_code == 200
+        assert json.loads(response.data)["message"] == "History timestamp updated"
+        
+        # Verify the update_one call with $set
+        mongo_db["history_like"].update_one.assert_called_once()
+        call_args = mongo_db["history_like"].update_one.call_args[0]
+        assert "$set" in call_args[1]
+
+    def test_add_like_new(self, client, mock_jwt_check, mock_db_connections):
+        """Test adding a new like."""
+        _, _, mongo_db = mock_db_connections
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Mock: Post not already liked
+        mongo_db["history_like"].find_one.return_value = None
+        
+        response = client.post(
+            f'/history/add_like?post_id={post_id}',
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["message"] == "Post liked successfully"
+        assert data["already_liked"] is False
+
+    def test_add_like_already_liked(self, client, mock_jwt_check, mock_db_connections):
+        """Test attempting to like an already liked post."""
+        _, _, mongo_db = mock_db_connections
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Mock: Post already liked
+        mongo_db["history_like"].find_one.return_value = {
+            "user_id": 1,
+            "likes": [{"post_id": post_id, "timestamp": datetime.now()}]
+        }
+        
+        response = client.post(
+            f'/history/add_like?post_id={post_id}',
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data["message"] == "You've already liked this post"
+        assert data["already_liked"] is True
+
+    def test_remove_like_success(self, client, mock_jwt_check, mock_db_connections):
+        """Test successfully removing a like."""
+        _, _, mongo_db = mock_db_connections
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Mock: Post is liked
+        mongo_db["history_like"].find_one.return_value = {
+            "user_id": 1,
+            "likes": [{"post_id": post_id, "timestamp": datetime.now()}]
+        }
+        
+        # Mock successful update
+        update_result = MagicMock()
+        update_result.modified_count = 1
+        mongo_db["history_like"].update_one.return_value = update_result
+        
+        response = client.delete(
+            f'/history/remove_like?post_id={post_id}',
+            headers={"Authorization": "Bearer valid_token"}
+        )
+        
+        assert response.status_code == 200
+        assert json.loads(response.data)["message"] == "Like removed successfully"
+        
+        # Verify the update_one call with $pull
+        mongo_db["history_like"].update_one.assert_called_once()
+        call_args = mongo_db["history_like"].update_one.call_args[0]
+        assert "$pull" in call_args[1]
+
+    def test_remove_like_not_found(self, client, mock_jwt_check, mock_db_connections):
+        """Test removing a like that doesn't exist."""
+        _, _, mongo_db = mock_db_connections
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Mock: Post not liked
+        mongo_db["history_like"].find_one.return_value = None
+        
+        response = client.delete(
+            f'/history/remove_like?post_id={post_id}',
+            headers={"Authorization": "Bearer valid_token"}
         )
         
         assert response.status_code == 404
-        assert response.json['message'] == "User not found"
+        assert json.loads(response.data)["message"] == "You haven't liked this post"
 
+    def test_missing_token(self, client):
+        """Test endpoints with missing authentication token."""
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
+        
+        # Test each endpoint that requires authentication
+        endpoints = [
+            (f'/history/add_read_history?post_id={post_id}', 'POST'),
+            (f'/history/add_like?post_id={post_id}', 'POST'),
+            (f'/history/remove_like?post_id={post_id}', 'DELETE')
+        ]
+        
+        for endpoint, method in endpoints:
+            if method == 'POST':
+                response = client.post(endpoint)
+            else:
+                response = client.delete(endpoint)
+                
+            assert response.status_code == 400
+            assert json.loads(response.data)["message"] == "Token is required"
 
-def test_add_like_success(client, mock_jwt, auth_headers):
-    """Test successful like addition"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
-    
-    with patch('routes.history.connect_mysql') as mock_mysql, \
-         patch('routes.history.connect_mongo') as mock_mongo:
+    def test_invalid_token(self, client, mock_jwt_check):
+        """Test endpoints with invalid token."""
+        # Set the mock to return None for invalid tokens
+        mock_jwt_check.check_token.return_value = None
+        post_id = "6075b7b2d51c5b5e6c3a9abc"
         
-        # Mock MySQL to return user ID
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = [MOCK_USER_ID]
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
+        # Test each endpoint that requires authentication
+        endpoints = [
+            (f'/history/add_read_history?post_id={post_id}', 'POST'),
+            (f'/history/add_like?post_id={post_id}', 'POST'),
+            (f'/history/remove_like?post_id={post_id}', 'DELETE')
+        ]
         
-        # Mock MongoDB for successful update
-        mock_collection = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_mongo.return_value.__enter__.return_value = mock_db
-        
-        response = client.post(
-            '/api/add_like',
-            headers=auth_headers(),
-            data={
-                "post_id": MOCK_POST_ID,
-                "username": MOCK_USERNAME
-            }
-        )
-        
-        assert response.status_code == 200
-        assert response.json['message'] == "Like added"
-        mock_collection.update_one.assert_called_once()
-
-
-def test_remove_like_success(client, mock_jwt, auth_headers):
-    """Test successful like removal"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
-    
-    with patch('routes.history.connect_mysql') as mock_mysql, \
-         patch('routes.history.connect_mongo') as mock_mongo:
-        
-        # Mock MySQL to return user ID
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = [MOCK_USER_ID]
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
-        
-        # Mock MongoDB for successful update
-        mock_collection = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_mongo.return_value.__enter__.return_value = mock_db
-        
-        response = client.post(
-            '/api/remove_like',
-            headers=auth_headers(),
-            data={
-                "post_id": MOCK_POST_ID,
-                "username": MOCK_USERNAME
-            }
-        )
-        
-        assert response.status_code == 200
-        assert response.json['message'] == "Like removed"
-        # Check that the MongoDB update was called with the right arguments
-        mock_collection.update_one.assert_called_with(
-            {"user_id": MOCK_USER_ID, "post_id": MOCK_POST_ID}, 
-            {"$pull": {"likes": MOCK_USER_ID}}
-        )
-
-
-# First, let's add a sanity check to verify the route exists
-def test_route_exists(client):
-    """Test if history route is properly registered"""
-    # Try the add_like route which we know should exist
-    response = client.post('/api/add_like', 
-                          data={"post_id": MOCK_POST_ID, "username": MOCK_USERNAME})
-    # It should fail with 400 (missing token) rather than 404 (route not found)
-    assert response.status_code == 400, "The /api/add_like route should return 400 for missing token, not 404"
-
-
-# Test just one endpoint for likes
-def test_add_like_simple(client, mock_jwt, auth_headers):
-    """Simple test to check if add_like route works"""
-    mock_jwt.check_token.return_value = {"username": MOCK_USERNAME}
-    
-    # Mock both database connections
-    with patch('routes.history.connect_mysql') as mock_mysql, \
-         patch('routes.history.connect_mongo') as mock_mongo:
-        
-        # Set up MySQL mock
-        mock_cursor = MagicMock()
-        mock_cursor.fetchone.return_value = [MOCK_USER_ID]
-        mock_mysql.return_value.__enter__.return_value = (mock_cursor, MagicMock())
-        
-        # Set up MongoDB mock
-        mock_collection = MagicMock()
-        mock_db = MagicMock()
-        mock_db.__getitem__.return_value = mock_collection
-        mock_mongo.return_value.__enter__.return_value = mock_db
-        
-        # Try the request
-        response = client.post(
-            '/api/add_like',
-            headers=auth_headers(),
-            data={
-                "post_id": MOCK_POST_ID,
-                "username": MOCK_USERNAME
-            }
-        )
-        
-        # Print response for debugging
-        print(f"Response: {response.status_code} - {response.data}")
-        
-        # Check if the route works
-        assert response.status_code != 404
-
-
-def test_route_with_different_prefix(client):
-    """Test if history routes have a different URL prefix"""
-    # Try different prefixes
-    prefixes = [
-        '/api/history',   # History might be under /api/history/
-        '/history',       # Or directly under /history/
-        '/',              # Or at the root
-    ]
-    
-    for prefix in prefixes:
-        response = client.post(f'{prefix}/add_like', 
-                              data={"post_id": MOCK_POST_ID, "username": MOCK_USERNAME})
-        if response.status_code != 404:
-            print(f"Found history route at prefix: {prefix}")
-            return
-    
-    assert False, "Could not find history routes at any expected prefix"
+        for endpoint, method in endpoints:
+            if method == 'POST':
+                response = client.post(endpoint, headers={"Authorization": "Bearer invalid_token"})
+            else:
+                response = client.delete(endpoint, headers={"Authorization": "Bearer invalid_token"})
+                
+            assert response.status_code == 401
+            assert json.loads(response.data)["message"] == "Invalid token"

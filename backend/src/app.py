@@ -19,4 +19,4 @@ app.register_blueprint(post_bp, url_prefix='/posts')
 app.register_blueprint(history_bp, url_prefix='/history')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    app.run(debug=True, host='0.0.0.0', port=os.getenv('APP_PORT'))

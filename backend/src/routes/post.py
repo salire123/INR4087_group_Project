@@ -23,12 +23,15 @@ def create_post():
         return jsonify({"message": "Title and content are required and must not be empty"}), 400
 
     try:
-        payload = current_app.config['JWT'].check_token(token)
-        if payload is None or "username" not in payload:
-            return jsonify({"message": "Invalid token"}), 401
+        if token:
+            token = token.split(" ")[1]
+            payload = current_app.config['JWT'].check_token(token)
+            print(payload)
+            if payload is None:
+                return jsonify({"message": "Invalid token"}), 401
         
         with connect_mysql() as (cursor, connection):
-            cursor.execute("SELECT user_id FROM users WHERE username = %s", (payload["username"],))
+            cursor.execute("SELECT user_id FROM users WHERE username = %s", (payload.get("username"),))
             result = cursor.fetchone()
             if not result:
                 return jsonify({"message": "User not found"}), 404
@@ -36,24 +39,34 @@ def create_post():
 
         media_url = ""
         if media_file:
-            # Upload to connect_Minio
+            # Upload to MinIO
             with connect_Minio() as (connect_Minio_client, bucket_name, url):
                 # Ensure bucket exists
-                if not connect_Minio_client.list_buckets() or bucket_name not in [b["Name"] for b in connect_Minio_client.list_buckets()["Buckets"]]:
-                    connect_Minio_client.create_bucket(Bucket=bucket_name)
-                
-                # Generate a unique object name (e.g., using timestamp and original filename)
+                buckets = connect_Minio_client.list_buckets()  # Returns list of Bucket objects
+                bucket_names = [b.name for b in buckets]  # Access 'name' attribute
+                if not buckets or bucket_name not in bucket_names:
+                    connect_Minio_client.make_bucket(bucket_name)
+
+                # Generate a unique object name
                 filename = f"{user_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{media_file.filename}"
-                connect_Minio_client.upload_fileobj(media_file, bucket_name, filename)
-                # Construct the connect_Minio URL (adjust based on your connect_Minio endpoint)
-                media_url = f"{url}/{bucket_name}/{filename}"
+                # Use put_object for file stream
+                media_file.stream.seek(0)  # Reset stream position to the beginning
+                connect_Minio_client.put_object(
+                    bucket_name,
+                    filename,
+                    media_file.stream,
+                    length=-1,  # Let MinIO determine the size (requires streaming)
+                    part_size=10*1024*1024  # 10MB part size for multipart upload
+                )
+                # Construct the MinIO URL
+                media_url = f"{url}/{filename}"
 
         with connect_mongo() as mongo_client:
             db = mongo_client
             collection = db["posts"]
             post = {
                 "title": title,
-                "media_url": media_url,  # Store connect_Minio URL
+                "media_url": media_url,  # Store MinIO URL
                 "content": content,
                 "user_id": user_id,
                 "comments": [],
@@ -67,16 +80,17 @@ def create_post():
         error_details = traceback.format_exc()
         current_app.logger.error(f"Error creating post: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred while creating the post"}), 500
-
+    
 @post_bp.route("/get_posts", methods=["GET"])
 def get_posts():
     '''Get a filtered, paginated list of posts'''
     try:
-        post_page = int(request.args.get("page", 1))
+        post_page = int(request.args.get("page", 1))  # Use request.args for GET query params
         post_per_page = int(request.args.get("per_page", 10))
         user_id = request.args.get("user_id")  # Filter by user
         search_term = request.args.get("search")  # Search in title or content
         
+        print(post_page, post_per_page, user_id, search_term)
         if post_page < 1 or post_per_page < 1:
             return jsonify({"message": "Page and per_page must be positive integers"}), 400
             
@@ -128,7 +142,7 @@ def get_posts():
 @post_bp.route("/get_post", methods=["GET"])
 def get_post():
     '''Get a single post by post_id'''
-    post_id = request.args.get("post_id")
+    post_id =  request.args.get("post_id")
     if not post_id:
         return jsonify({"message": "Post ID is required"}), 400
 
@@ -151,7 +165,7 @@ def get_post():
 @post_bp.route("/delete_post", methods=["DELETE"])
 def delete_post():
     '''Delete a post by post_id'''
-    post_id = request.args.get("post_id")
+    post_id =  request.args.get("post_id")
     token = request.headers.get("Authorization")
 
     if not token:
@@ -160,9 +174,12 @@ def delete_post():
         return jsonify({"message": "Post ID is required"}), 400
 
     try:
-        payload = current_app.config['JWT'].check_token(token)
-        if payload is None or "username" not in payload:
-            return jsonify({"message": "Invalid token"}), 401
+        if token:
+            token = token.split(" ")[1]
+            payload = current_app.config['JWT'].check_token(token)
+            print(payload)
+            if payload is None:
+                return jsonify({"message": "Invalid token"}), 401
         
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (payload["username"],))
@@ -191,7 +208,7 @@ def delete_post():
 @post_bp.route("/update_post", methods=["PUT"])
 def update_post():
     '''Update a post by post_id with optional media file replacement'''
-    post_id = request.args.get("post_id")
+    post_id =  request.args.get("post_id")
     token = request.headers.get("Authorization")
     title = request.form.get("title", "").strip()  # Use form data
     content = request.form.get("content", "").strip()
@@ -203,9 +220,12 @@ def update_post():
         return jsonify({"message": "Post ID is required"}), 400
 
     try:
-        payload = current_app.config['JWT'].check_token(token)
-        if payload is None or "username" not in payload:
-            return jsonify({"message": "Invalid token"}), 401
+        if token:
+            token = token.split(" ")[1]
+            payload = current_app.config['JWT'].check_token(token)
+            print(payload)
+            if payload is None:
+                return jsonify({"message": "Invalid token"}), 401
         
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (payload["username"],))
@@ -231,17 +251,31 @@ def update_post():
 
             # Handle media file update
             if media_file:
-                # Upload to connect_Minio
+                media_url = ""
+                # Upload to MinIO
                 with connect_Minio() as (connect_Minio_client, bucket_name, url):
                     # Ensure bucket exists
-                    if not connect_Minio_client.list_buckets() or bucket_name not in [b["Name"] for b in connect_Minio_client.list_buckets()["Buckets"]]:
-                        connect_Minio_client.create_bucket(Bucket=bucket_name)
-                    
-                    # Generate a unique object name (e.g., using timestamp and original filename)
+                    buckets = connect_Minio_client.list_buckets()  # Returns list of Bucket objects
+                    bucket_names = [b.name for b in buckets]  # Access 'name' attribute
+                    if not buckets or bucket_name not in bucket_names:
+                        connect_Minio_client.make_bucket(bucket_name)
+
+                    # Generate a unique object name
                     filename = f"{user_id}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{media_file.filename}"
-                    connect_Minio_client.upload_fileobj(media_file, bucket_name, filename)
+                    # Use put_object for file stream
+                    media_file.stream.seek(0)  # Reset stream position to the beginning
+                    connect_Minio_client.put_object(
+                        bucket_name,
+                        filename,
+                        media_file.stream,
+                        length=-1,  # Let MinIO determine the size (requires streaming)
+                        part_size=10*1024*1024  # 10MB part size for multipart upload
+                    )
+                    # Construct the MinIO URL
+                    media_url = f"{url}/{filename}"
+
                     # Update media_url with new connect_Minio URL
-                    update_data["media_url"] = f"{url}/{bucket_name}/{filename}"
+                    update_data["media_url"] = media_url
 
             if update_data:
                 collection.update_one({"_id": ObjectId(post_id)}, {"$set": update_data})
@@ -258,7 +292,7 @@ def update_post():
 def create_comment():
     '''Create a comment on a post'''
     token = request.headers.get("Authorization")
-    post_id = request.form.get("post_id")
+    post_id = request.args.get("post_id")
     comment = request.form.get("comment", "").strip()
 
     if not token:
@@ -267,9 +301,12 @@ def create_comment():
         return jsonify({"message": "Post ID and comment are required and must not be empty"}), 400
 
     try:
-        payload = current_app.config['JWT'].check_token(token)
-        if payload is None or "username" not in payload:
-            return jsonify({"message": "Invalid token"}), 401
+        if token:
+            token = token.split(" ")[1]
+            payload = current_app.config['JWT'].check_token(token)
+            print(payload)
+            if payload is None:
+                return jsonify({"message": "Invalid token"}), 401
         
         with connect_mysql() as (cursor, connection):
             cursor.execute("SELECT user_id FROM users WHERE username = %s", (payload["username"],))

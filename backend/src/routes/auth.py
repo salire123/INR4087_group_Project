@@ -53,7 +53,7 @@ def login():
  
 
 @auth_bp.route("/register", methods=["POST"])
-# for registration, we need to insert the user into the database
+# for registration, we need to insert the user into the databased
 def register():
     username = request.form.get("username")
     password = request.form.get("password")
@@ -81,9 +81,14 @@ def register():
                 with connect_mongo() as mongo_client:
                     # create a db by userid
                     db = mongo_client
-                    collection = db["history"]
+                    collection = db["history_like"]
                     # insert the user into the history collection
-                    collection.insert_one({"user_id": user_id, "history": [], "likes": [], "account_created": str(datetime.now())})
+                    collection.insert_one({
+                        "user_id": user_id, 
+                        "history": [], 
+                        "likes": [], 
+                        "account_created": str(datetime.now())
+                    })
 
             # if an error occurs, rollback the changes
             except Exception as e:
