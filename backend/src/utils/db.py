@@ -2,6 +2,7 @@
 import mysql.connector
 from mysql.connector import Error
 import pymongo
+import redis
 import os
 from .env import Config
 
@@ -62,7 +63,21 @@ def connect_Minio():
         raise
 
         
-            
+@contextmanager
+def redis_connection(db: int = 0):
+    # 创建 Redis 连接
+    client = redis.Redis(
+        host=Config.get("REDIS_HOST"),
+        port=Config.get("REDIS_PORT"),
+        db  = db,
+        decode_responses=True  # 确保返回字符串而不是字节
+    )
+    try:
+        # 提供 Redis 客户端给调用者使用
+        yield client
+    finally:
+        # 关闭连接
+        client.close()      
     
 
     

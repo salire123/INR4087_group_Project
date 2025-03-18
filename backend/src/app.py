@@ -7,6 +7,7 @@ from utils import *
 import os
 
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.get('SECRET_KEY')
 app.config['JWT'] = JWTManager(app.config['SECRET_KEY'])

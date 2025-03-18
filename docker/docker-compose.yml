@@ -50,6 +50,14 @@ services:
     networks:
       - project-network
 
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT}:${REDIS_PORT}"
+    networks:
+      - project-network
+
   backend:
     build:
         context: ../backend
@@ -59,7 +67,7 @@ services:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
       # Flask
-      SECRET_KEY: "my_secret_key"
+      SECRET_KEY: ${SECRET_KEY}
       FLASK_APP: "app.py"
       APP_PORT: "${BACKEND_PORT}"
       # MySQL

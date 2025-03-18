@@ -48,10 +48,7 @@ def login():
         error_details = traceback.format_exc()
         current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred during authentication"}), 500
-
-        
  
-
 @auth_bp.route("/register", methods=["POST"])
 # for registration, we need to insert the user into the databased
 def register():
@@ -63,7 +60,7 @@ def register():
         with connect_mysql() as (cursor, connection):
 
             # check if the user already exists
-            cursor.execute("SELECT username, email FROM users WHERE username = %s", (username,))
+            cursor.execute("SELECT username, email FROM users WHERE username = %s OR email = %s", (username, email,))
             if cursor.fetchone():
                 return jsonify({"message": "User already exists"}), 400
 
@@ -111,7 +108,6 @@ def register():
         current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred during authentication"}), 500
 
-
 @auth_bp.route("/logout", methods=["POST"])
 # for logout, we need to invalidate the token
 def logout():
@@ -132,7 +128,6 @@ def logout():
         error_details = traceback.format_exc()
         current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred during authentication"}), 500
-
 
 @auth_bp.route("/renew_token", methods=["POST"])
 # for renewing the token, we need to check if the token is valid and renew it

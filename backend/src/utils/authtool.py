@@ -1,6 +1,8 @@
 import jwt
 from datetime import datetime, timedelta
 from typing import Dict, Any
+from .db import redis_connection
+from .env import Config
 
 class JWTManager:
     """JWT 管理类，用于生成和解码 JWT Token"""
@@ -18,6 +20,7 @@ class JWTManager:
         """
         self.secret = secret
         self.algorithm = algorithm
+        self._blacklist = "jwt_blacklist"
 
     def generate_token(self, payload: Dict[str, Any], expiration: int) -> str:
         """
@@ -42,22 +45,26 @@ class JWTManager:
         return token
 
     def check_token(self, token: str) -> Dict[str, Any]:
-        """
-        检查 JWT Token 是否有效
-        
-        Args:
-            token (str): 要检查的 Token
-        
-        Returns:
-            Dict[str, Any]: 解码后的 Token 数据
-        """
-        try:
-            if token in JWTManager._blacklist:
-                return None
-            payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
-            return payload
-        except Exception as e:
-            return None
+            """
+            检查 JWT Token 是否有效
+            
+            Args:
+                token (str): 要检查的 Token
+                redis_host (str): Redis 主机地址
+                redis_port (int): Redis 端口
+                redis_db (int): Redis 数据库编号
+            
+            Returns:
+                Dict[str, Any]: 解码后的 Token 数据
+            """
+            with redis_connection(0) as redis_client:
+                try:
+                    if redis_client.sismember(self._blacklist, token):
+                        return None
+                    payload = jwt.decode(token, self.secret, algorithms=[self.algorithm])
+                    return payload
+                except Exception as e:
+                    return None
     
     def blacklist_token(self, token: str) -> None:
         """
@@ -66,16 +73,18 @@ class JWTManager:
         Args:
             token (str): 要加入黑名单的 Token
         """
-        if token not in JWTManager._blacklist:
-            JWTManager._blacklist.append(token)
+        with redis_connection(0) as redis:
+            redis.sadd(self._blacklist, token)
         return None
     
     def remove_ExpiredToken(self) -> None:
         """
         清除过期 Token
         """
-        for token in JWTManager._blacklist[:]:  # 使用副本遍历，避免修改时出错
-            payload = self.check_token(token)
-            if payload is None:
-                JWTManager._blacklist.remove(token)
+        with redis_connection(0) as redis_client:
+                    blacklisted_tokens = redis_client.smembers(self._blacklist)
+                    for token in blacklisted_tokens:
+                        payload = self.check_token(token, 0)
+                        if payload is None:
+                            redis_client.srem(self._blacklist, token)
         return None

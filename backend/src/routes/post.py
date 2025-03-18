@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from bson.objectid import ObjectId
 from contextlib import contextmanager
 
-from utils.db import connect_mysql, connect_mongo, connect_Minio
+from utils.db import connect_mysql, connect_mongo, connect_Minio, redis_connection
 import traceback
 
 post_bp = Blueprint('post', __name__)
@@ -340,4 +340,34 @@ def create_comment():
         error_details = traceback.format_exc()
         current_app.logger.error(f"Login error: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred during authentication"}), 500
+    
+@post_bp.route("/most_read_today", methods=["GET"])
+def most_read_today():
+    '''Get the most read posts today from Redis'''
+    try:
+        with redis_connection(db=1) as redis_client:
+            # Get all keys matching the pattern for post reads
+            post_keys = redis_client.keys("post:*:reads")
+            if not post_keys:
+                return jsonify({"message": "No posts read today", "top_posts": []}), 200
+
+            # Get the read counts for all posts
+            post_counts = {}
+            for key in post_keys:
+                post_id = key.split(":")[1]  # Extract post_id from "post:<post_id>:reads"
+                count = int(redis_client.get(key))  # Get the count
+                post_counts[post_id] = count
+
+            # Sort posts by read count in descending order
+            sorted_posts = sorted(post_counts.items(), key=lambda x: x[1], reverse=True)
+            
+            # Limit to top 10 (or adjust as needed)
+            top_posts = [{"post_id": post_id, "read_count": count} for post_id, count in sorted_posts[:10]]
+
+            return jsonify({"message": "Top posts retrieved", "top_posts": top_posts}), 200
+
+    except Exception as e:
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Most read today error: {str(e)}\n{error_details}")
+        return jsonify({"message": "An error occurred while retrieving most read posts"}), 500
     

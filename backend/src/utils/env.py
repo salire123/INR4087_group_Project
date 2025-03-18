@@ -10,3 +10,4 @@ class Config:
     def get(key, default=None):
         """Get an environment variable by key, with an optional default."""
         return os.getenv(key, default)
+    

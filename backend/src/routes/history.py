@@ -3,6 +3,7 @@ from utils.db import connect_mysql, connect_mongo
 from datetime import datetime
 from bson.objectid import ObjectId
 from contextlib import contextmanager
+from utils.db import redis_connection
 
 history_bp = Blueprint('history', __name__)
 
@@ -86,6 +87,14 @@ def add_read_history():
                 "history.post_id": post_id
             })
             
+            with redis_connection(db=1) as redis_client:
+                read_key = f"post:{post_id}:reads"
+                # Increment the read count for this post
+                redis_client.incr(read_key)
+                # Set expiration to 24 hours if it's a new key (won't reset if already exists)
+                if redis_client.ttl(read_key) == -1:  # -1 means no expiration set
+                    redis_client.expire(read_key, 24 * 60 * 60)  # 24 hours in seconds
+
             if existing_item:
                 # Update timestamp of existing item
                 collection.update_one(
@@ -166,8 +175,6 @@ def add_like():
                             "timestamp": datetime.now()
                         }}}
                     )
-                
-            
             return jsonify({"message": "Post liked successfully", "already_liked": False}), 200
                 
     except Exception as e:
