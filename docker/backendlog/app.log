@@ -1,139 +1,163 @@
-2025-03-18 08:21:29,090 - app - INFO - Flask app started
-2025-03-18 08:21:30,773 - app - INFO - Flask app started
-2025-03-18 08:21:44,885 - app - INFO - Registration attempt received from IP: 172.19.0.1
-2025-03-18 08:21:44,938 - app - INFO - User already exists: testuser2 - registration attempt from IP: 172.19.0.1
-2025-03-18 08:21:54,131 - app - INFO - Create post request from IP: 172.19.0.1
-2025-03-18 08:22:00,246 - app - ERROR - Error creating post from IP 172.19.0.1: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f6926639eb0>: Failed to establish a new connection: [Errno 111] Connection refused'))
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connection.py", line 198, in _new_conn
-    sock = connection.create_connection(
-        (self._dns_host, self.port),
-    ...<2 lines>...
-        socket_options=self.socket_options,
-    )
-  File "/usr/local/lib/python3.13/site-packages/urllib3/util/connection.py", line 85, in create_connection
-    raise err
-  File "/usr/local/lib/python3.13/site-packages/urllib3/util/connection.py", line 73, in create_connection
-    sock.connect(sa)
-    ~~~~~~~~~~~~^^^^
-ConnectionRefusedError: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connectionpool.py", line 787, in urlopen
-    response = self._make_request(
-        conn,
-    ...<10 lines>...
-        **response_kw,
-    )
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connectionpool.py", line 493, in _make_request
-    conn.request(
-    ~~~~~~~~~~~~^
-        method,
-        ^^^^^^^
-    ...<6 lines>...
-        enforce_content_length=enforce_content_length,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connection.py", line 445, in request
-    self.endheaders()
-    ~~~~~~~~~~~~~~~^^
-  File "/usr/local/lib/python3.13/http/client.py", line 1333, in endheaders
-    self._send_output(message_body, encode_chunked=encode_chunked)
-    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/local/lib/python3.13/http/client.py", line 1093, in _send_output
-    self.send(msg)
-    ~~~~~~~~~^^^^^
-  File "/usr/local/lib/python3.13/http/client.py", line 1037, in send
-    self.connect()
-    ~~~~~~~~~~~~^^
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connection.py", line 276, in connect
-    self.sock = self._new_conn()
-                ~~~~~~~~~~~~~~^^
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connection.py", line 213, in _new_conn
-    raise NewConnectionError(
-        self, f"Failed to establish a new connection: {e}"
-    ) from e
-urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x7f6926639eb0>: Failed to establish a new connection: [Errno 111] Connection refused
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/app/src/routes/post.py", line 58, in create_post
-    buckets = connect_Minio_client.list_buckets()  # Returns list of Bucket objects
-  File "/usr/local/lib/python3.13/site-packages/minio/api.py", line 678, in list_buckets
-    response = self._execute("GET")
-  File "/usr/local/lib/python3.13/site-packages/minio/api.py", line 441, in _execute
-    return self._url_open(
-           ~~~~~~~~~~~~~~^
-        method,
-        ^^^^^^^
-    ...<7 lines>...
-        no_body_trace=no_body_trace,
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/usr/local/lib/python3.13/site-packages/minio/api.py", line 303, in _url_open
-    response = self._http.urlopen(
-        method,
-    ...<3 lines>...
-        preload_content=preload_content,
-    )
-  File "/usr/local/lib/python3.13/site-packages/urllib3/poolmanager.py", line 443, in urlopen
-    response = conn.urlopen(method, u.request_uri, **kw)
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connectionpool.py", line 871, in urlopen
-    return self.urlopen(
-           ~~~~~~~~~~~~^
-        method,
-        ^^^^^^^
-    ...<13 lines>...
-        **response_kw,
-        ^^^^^^^^^^^^^^
-    )
-    ^
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connectionpool.py", line 871, in urlopen
-    return self.urlopen(
-           ~~~~~~~~~~~~^
-        method,
-        ^^^^^^^
-    ...<13 lines>...
-        **response_kw,
-        ^^^^^^^^^^^^^^
-    )
-    ^
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connectionpool.py", line 871, in urlopen
-    return self.urlopen(
-           ~~~~~~~~~~~~^
-        method,
-        ^^^^^^^
-    ...<13 lines>...
-        **response_kw,
-        ^^^^^^^^^^^^^^
-    )
-    ^
-  [Previous line repeated 2 more times]
-  File "/usr/local/lib/python3.13/site-packages/urllib3/connectionpool.py", line 841, in urlopen
-    retries = retries.increment(
-        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
-    )
-  File "/usr/local/lib/python3.13/site-packages/urllib3/util/retry.py", line 519, in increment
-    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=9000): Max retries exceeded with url: / (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f6926639eb0>: Failed to establish a new connection: [Errno 111] Connection refused'))
-
-2025-03-18 08:25:04,850 - app - INFO - Flask app started
-2025-03-18 08:25:06,655 - app - INFO - Flask app started
-2025-03-18 08:25:40,809 - app - INFO - Create post request from IP: 172.19.0.1
-2025-03-18 08:25:40,920 - app - INFO - Post created with ID: 67d92e046540ed9981bf056f by user_id: 2 from IP: 172.19.0.1
-2025-03-18 08:25:56,870 - app - INFO - Create post request from IP: 172.19.0.1
-2025-03-18 08:25:56,926 - app - INFO - Post created with ID: 67d92e146540ed9981bf0571 by user_id: 2 from IP: 172.19.0.1
-2025-03-18 08:26:01,191 - app - INFO - Create post request from IP: 172.19.0.1
-2025-03-18 08:26:01,252 - app - INFO - Post created with ID: 67d92e196540ed9981bf0573 by user_id: 2 from IP: 172.19.0.1
-2025-03-18 08:26:06,094 - app - INFO - Create post request from IP: 172.19.0.1
-2025-03-18 08:26:06,176 - app - INFO - Post created with ID: 67d92e1e6540ed9981bf0575 by user_id: 2 from IP: 172.19.0.1
-2025-03-18 08:26:10,654 - app - INFO - Create post request from IP: 172.19.0.1
-2025-03-18 08:26:10,749 - app - INFO - Post created with ID: 67d92e226540ed9981bf0577 by user_id: 2 from IP: 172.19.0.1
-2025-03-18 08:26:17,210 - app - INFO - Get posts request from IP: 172.19.0.1
-2025-03-18 08:26:17,233 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:39:03,414 - app - INFO - Flask app started
+2025-03-18 08:39:04,109 - app - INFO - Flask app started
+2025-03-18 08:39:13,584 - app - INFO - Registration attempt received from IP: 172.19.0.1
+2025-03-18 08:39:13,761 - app - INFO - User testuser2 registered successfully with ID: 2 from IP: 172.19.0.1
+2025-03-18 08:39:17,950 - app - INFO - Login attempt received from IP: 172.19.0.1
+2025-03-18 08:39:17,954 - app - INFO - User testuser2 already logged in from IP: 172.19.0.1
+2025-03-18 08:39:22,076 - app - INFO - Login attempt received from IP: 172.19.0.1
+2025-03-18 08:39:22,210 - app - INFO - Generating token with payload: {'username': 'testuser2', 'exp': datetime.datetime(2025, 3, 18, 9, 39, 22, 210255)}
+2025-03-18 08:39:22,211 - app - INFO - User testuser2 logged in successfully from IP: 172.19.0.1
+2025-03-18 08:39:49,125 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:39:49,235 - app - INFO - Post created with ID: 67d931557341a81ac624f11f by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:39:54,523 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:39:54,583 - app - INFO - Post created with ID: 67d9315a7341a81ac624f121 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:39:58,198 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:39:58,253 - app - INFO - Post created with ID: 67d9315e7341a81ac624f123 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:01,580 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:01,635 - app - INFO - Post created with ID: 67d931617341a81ac624f125 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:04,763 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:04,821 - app - INFO - Post created with ID: 67d931647341a81ac624f127 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:07,607 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:07,660 - app - INFO - Post created with ID: 67d931677341a81ac624f129 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:10,300 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:10,353 - app - INFO - Post created with ID: 67d9316a7341a81ac624f12b by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:14,182 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:14,236 - app - INFO - Post created with ID: 67d9316e7341a81ac624f12d by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:16,598 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:16,650 - app - INFO - Post created with ID: 67d931707341a81ac624f12f by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:20,063 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:40:20,122 - app - INFO - Post created with ID: 67d931747341a81ac624f131 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:40:23,965 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:40:23,991 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:41:14,653 - app - INFO - Flask app started
+2025-03-18 08:41:15,194 - app - INFO - Flask app started
+2025-03-18 08:41:39,418 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:41:39,521 - app - INFO - Post created with ID: 67d931c39957ea08775a22a2 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:41:44,894 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:41:44,908 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:42:43,220 - app - INFO - Flask app started
+2025-03-18 08:42:45,677 - app - INFO - Flask app started
+2025-03-18 08:42:54,015 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:42:54,193 - app - INFO - Post created with ID: 67d9320ec07955df322d7174 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:42:57,316 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:42:57,331 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:44:27,020 - app - INFO - Flask app started
+2025-03-18 08:44:28,315 - app - INFO - Flask app started
+2025-03-18 08:44:32,491 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:44:32,517 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:44:36,088 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:44:36,161 - app - INFO - Post created with ID: 67d93274b66bb1e3720d13b2 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:44:39,484 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:44:39,503 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:48:06,094 - app - INFO - Flask app started
+2025-03-18 08:48:07,802 - app - INFO - Flask app started
+2025-03-18 08:50:45,402 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:50:45,431 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:50:49,320 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:50:49,398 - app - INFO - Post created with ID: 67d933e9f2a765f4416a8945 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:50:52,241 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:50:52,259 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:51:28,717 - app - INFO - Flask app started
+2025-03-18 08:51:29,337 - app - INFO - Flask app started
+2025-03-18 08:51:33,082 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:51:33,161 - app - INFO - Post created with ID: 67d9341520e0d289acadd4e4 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:51:35,960 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:51:35,982 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:54:02,414 - app - INFO - Flask app started
+2025-03-18 08:54:03,351 - app - INFO - Flask app started
+2025-03-18 08:54:53,119 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:54:53,152 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:55:50,450 - app - INFO - Flask app started
+2025-03-18 08:55:52,460 - app - INFO - Flask app started
+2025-03-18 08:55:54,373 - app - INFO - Flask app started
+2025-03-18 08:55:56,682 - app - INFO - Flask app started
+2025-03-18 08:55:59,388 - app - INFO - Flask app started
+2025-03-18 08:56:02,169 - app - INFO - Flask app started
+2025-03-18 08:56:06,777 - app - INFO - Flask app started
+2025-03-18 08:56:14,216 - app - INFO - Flask app started
+2025-03-18 08:56:28,773 - app - INFO - Flask app started
+2025-03-18 08:56:39,633 - app - INFO - Flask app started
+2025-03-18 08:56:40,840 - app - INFO - Flask app started
+2025-03-18 08:56:41,982 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:56:42,081 - app - INFO - Post created with ID: 67d9354a7ff56b5940ba2ba7 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:56:46,266 - app - INFO - Analyze each day post request received from IP: 172.19.0.1
+2025-03-18 08:57:17,174 - app - INFO - Registration attempt received from IP: 172.19.0.1
+2025-03-18 08:57:17,205 - app - INFO - User already exists: testuser3 - registration attempt from IP: 172.19.0.1
+2025-03-18 08:57:24,299 - app - INFO - Registration attempt received from IP: 172.19.0.1
+2025-03-18 08:57:24,456 - app - INFO - User testuser3 registered successfully with ID: 3 from IP: 172.19.0.1
+2025-03-18 08:57:40,347 - app - INFO - Login attempt received from IP: 172.19.0.1
+2025-03-18 08:57:40,502 - app - INFO - Generating token with payload: {'username': 'testuser3', 'exp': datetime.datetime(2025, 3, 18, 9, 57, 40, 502755)}
+2025-03-18 08:57:40,504 - app - INFO - User testuser3 logged in successfully from IP: 172.19.0.1
+2025-03-18 08:58:28,348 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 08:58:28,431 - app - INFO - Post created with ID: 67d935b47ff56b5940ba2bac by user_id: 2 from IP: 172.19.0.1
+2025-03-18 08:58:43,867 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:58:43,884 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:58:54,628 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:58:54,646 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:58:58,929 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:58:58,953 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:59:15,373 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:59:15,390 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 08:59:24,186 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 08:59:24,204 - app - INFO - Successfully retrieved 2 posts from IP: 172.19.0.1
+2025-03-18 08:59:53,215 - app - INFO - Get post request from IP: 172.19.0.1
+2025-03-18 08:59:53,230 - app - INFO - Post retrieved successfully with ID: 67d9320ec07955df322d7174 from IP: 172.19.0.1
+2025-03-18 09:00:02,991 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:00:03,013 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 09:00:54,481 - app - INFO - Delete post request from IP: 172.19.0.1
+2025-03-18 09:00:54,527 - app - INFO - Post not found with ID: 67d7bf7947e3d9444145d4b4 - delete request from IP: 172.19.0.1
+2025-03-18 09:01:06,996 - app - INFO - Delete post request from IP: 172.19.0.1
+2025-03-18 09:01:07,039 - app - INFO - Post deleted with ID: 67d935b47ff56b5940ba2bac by user: testuser2 from IP: 172.19.0.1
+2025-03-18 09:01:09,501 - app - INFO - Delete post request from IP: 172.19.0.1
+2025-03-18 09:01:09,545 - app - INFO - Post not found with ID: 67d935b47ff56b5940ba2bac - delete request from IP: 172.19.0.1
+2025-03-18 09:01:15,494 - app - INFO - Get post request from IP: 172.19.0.1
+2025-03-18 09:01:15,510 - app - INFO - Post not found with ID: 67d935b47ff56b5940ba2bac - request from IP: 172.19.0.1
+2025-03-18 09:01:29,417 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:01:29,472 - app - INFO - Post created with ID: 67d936697ff56b5940ba2bb9 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 09:01:47,825 - app - INFO - Get post request from IP: 172.19.0.1
+2025-03-18 09:01:47,842 - app - INFO - Post not found with ID: 67d935b47ff56b5940ba2bac - request from IP: 172.19.0.1
+2025-03-18 09:02:07,888 - app - INFO - Get post request from IP: 172.19.0.1
+2025-03-18 09:02:07,900 - app - INFO - Post retrieved successfully with ID: 67d936697ff56b5940ba2bb9 from IP: 172.19.0.1
+2025-03-18 09:02:21,404 - app - INFO - Update post request from IP: 172.19.0.1
+2025-03-18 09:02:21,456 - app - INFO - Post updated with ID: 67d936697ff56b5940ba2bb9 by user: testuser2 from IP: 172.19.0.1
+2025-03-18 09:02:27,651 - app - INFO - Get post request from IP: 172.19.0.1
+2025-03-18 09:02:27,664 - app - INFO - Post retrieved successfully with ID: 67d936697ff56b5940ba2bb9 from IP: 172.19.0.1
+2025-03-18 09:02:41,739 - app - INFO - Create comment request from IP: 172.19.0.1
+2025-03-18 09:02:41,790 - app - INFO - Comment created for post ID: 67d936697ff56b5940ba2bb9 by user: testuser2 from IP: 172.19.0.1
+2025-03-18 09:02:46,569 - app - INFO - Get post request from IP: 172.19.0.1
+2025-03-18 09:02:46,587 - app - INFO - Post retrieved successfully with ID: 67d936697ff56b5940ba2bb9 from IP: 172.19.0.1
+2025-03-18 09:03:27,476 - app - INFO - Add like request from IP: 172.19.0.1
+2025-03-18 09:03:27,535 - app - INFO - Like added for post 67d7d27049fcc26e68d3ee81 by user: testuser2 from IP: 172.19.0.1
+2025-03-18 09:04:06,320 - app - INFO - Registration attempt received from IP: 172.19.0.1
+2025-03-18 09:04:06,354 - app - INFO - User already exists: testuser3 - registration attempt from IP: 172.19.0.1
+2025-03-18 09:04:16,230 - app - INFO - Registration attempt received from IP: 172.19.0.1
+2025-03-18 09:04:16,262 - app - INFO - User already exists: testuser2 - registration attempt from IP: 172.19.0.1
+2025-03-18 09:04:23,429 - app - INFO - Registration attempt received from IP: 172.19.0.1
+2025-03-18 09:04:23,587 - app - INFO - User testuser1 registered successfully with ID: 4 from IP: 172.19.0.1
+2025-03-18 09:04:31,735 - app - INFO - Login attempt received from IP: 172.19.0.1
+2025-03-18 09:04:31,868 - app - INFO - Generating token with payload: {'username': 'testuser1', 'exp': datetime.datetime(2025, 3, 18, 10, 4, 31, 868530)}
+2025-03-18 09:04:31,869 - app - INFO - User testuser1 logged in successfully from IP: 172.19.0.1
+2025-03-18 09:05:06,212 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:05:06,266 - app - INFO - Post created with ID: 67d937427ff56b5940ba2bc4 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 09:05:07,230 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:05:07,287 - app - INFO - Post created with ID: 67d937437ff56b5940ba2bc6 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 09:05:08,025 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:05:08,084 - app - INFO - Post created with ID: 67d937447ff56b5940ba2bc8 by user_id: 2 from IP: 172.19.0.1
+2025-03-18 09:05:13,377 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:05:13,398 - app - INFO - Successfully retrieved 0 posts from IP: 172.19.0.1
+2025-03-18 09:05:18,983 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:05:19,000 - app - INFO - Successfully retrieved 0 posts from IP: 172.19.0.1
+2025-03-18 09:05:33,401 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:05:33,420 - app - INFO - Successfully retrieved 0 posts from IP: 172.19.0.1
+2025-03-18 09:05:38,585 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:05:38,601 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 09:06:00,882 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:06:00,966 - app - INFO - Post created with ID: 67d937787ff56b5940ba2bce by user_id: 4 from IP: 172.19.0.1
+2025-03-18 09:06:01,848 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:06:01,903 - app - INFO - Post created with ID: 67d937797ff56b5940ba2bd0 by user_id: 4 from IP: 172.19.0.1
+2025-03-18 09:06:02,764 - app - INFO - Create post request from IP: 172.19.0.1
+2025-03-18 09:06:02,849 - app - INFO - Post created with ID: 67d9377a7ff56b5940ba2bd2 by user_id: 4 from IP: 172.19.0.1
+2025-03-18 09:06:05,828 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:06:05,849 - app - INFO - Successfully retrieved 5 posts from IP: 172.19.0.1
+2025-03-18 09:06:13,162 - app - INFO - Get posts request from IP: 172.19.0.1
+2025-03-18 09:06:13,177 - app - INFO - Successfully retrieved 3 posts from IP: 172.19.0.1

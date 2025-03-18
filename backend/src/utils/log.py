@@ -29,7 +29,12 @@ def setup_logging():
     handler.setFormatter(formatter)
     
     # Set log level
-    handler.setLevel(logging.INFO)
+    #get the log level from the config
+    log_level = Config.get("LOG_LEVEL")
+    if log_level == "DEBUG":
+        handler.setLevel(logging.DEBUG)
+    elif log_level == "INFO":
+        handler.setLevel(logging.INFO)
     
     # Add handler to the app logger
     app.logger.handlers.clear()  # Clear default handlers (console)

@@ -73,7 +73,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       FLASK_APP: "app.py"
       APP_PORT: "${BACKEND_PORT}"
-      DOCKER: "True"
+      DOCKER: "${DOCKER}"
       
       # MySQL
       MYSQL_HOST: "mysql"

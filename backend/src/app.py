@@ -19,6 +19,7 @@ with app.app_context():
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(post_bp, url_prefix='/posts')
+app.register_blueprint(analyze_bp, url_prefix='/analyze')
 app.register_blueprint(history_bp, url_prefix='/history')
 
 if __name__ == '__main__':

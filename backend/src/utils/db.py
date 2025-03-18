@@ -57,7 +57,8 @@ def connect_Minio():
             secure=False
         )
         bucket_name = Config.get("MINIO_BUCKET")
-        if Config.get("DOCKER") is True:
+        docker = Config.get("DOCKER")
+        if docker == "True":
             #if we are running in a docker container
             url = f"http://localhost:9000/{bucket_name}"
         else:
