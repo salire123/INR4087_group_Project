@@ -32,7 +32,7 @@ def get_history_like():
         
         with connect_mongo() as mongo_client:
             db = mongo_client
-            collection = db["history_like"]
+            collection = db["users"]
 
             # Get history and likes
             current_app.logger.debug(f"Querying MongoDB for history of user_id: {user_id} from IP: {client_ip}")
@@ -101,7 +101,7 @@ def add_read_history():
         # Connect to MongoDB and update history
         with connect_mongo() as mongo_client:
             db = mongo_client
-            collection = db["history_like"]
+            collection = db["users"]
             
             # Check if post is already in history
             current_app.logger.debug(f"Checking if post {post_id} exists in history for user_id: {user_id} from IP: {client_ip}")
@@ -194,7 +194,7 @@ def add_like():
         # Connect to MongoDB and update likes
         with connect_mongo() as mongo_client:
             db = mongo_client
-            likes_collection = db["history_like"]
+            likes_collection = db["users"]
             
             # Check if user already liked this post
             current_app.logger.debug(f"Checking if post {post_id} already liked by user_id: {user_id} from IP: {client_ip}")
@@ -269,7 +269,7 @@ def remove_like():
         # Connect to MongoDB and remove like
         with connect_mongo() as mongo_client:
             db = mongo_client
-            collection = db["history_like"]
+            collection = db["users"]
             
             # Check if the post was liked by the user
             current_app.logger.debug(f"Checking if post {post_id} was liked by user_id: {user_id} from IP: {client_ip}")

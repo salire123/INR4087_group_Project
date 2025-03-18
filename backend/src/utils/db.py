@@ -21,6 +21,7 @@ def connect_mysql():
         )
         cursor = connection.cursor()
         yield (cursor, connection)
+        cursor.commit()
     except Error as e:
         cursor.rollback()
         print(f"The error '{e}' occurred")
@@ -37,9 +38,6 @@ def connect_mongo():
         client = pymongo.MongoClient(Config.get("MONGO_URL"))
         db = client[Config.get("MONGO_DATABASE")]
         yield db
-    except pymongo.errors.ConnectionFailure as e:  # Updated to ConnectionFailure
-        print(f"Connection failure: {e}")
-        raise
     except Exception as e:
         print(f"Unexpected error: {e}")
         raise

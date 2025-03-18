@@ -92,26 +92,25 @@ def register():
                 with connect_mongo() as mongo_client:
                     # create a db by userid
                     db = mongo_client
-                    collection = db["history_like"]
+                    collection = db["users"]
                     # insert the user into the history collection
                     collection.insert_one({
+                        "username": username,
                         "user_id": user_id, 
                         "history": [], 
                         "likes": [], 
+                        "Subscriber_to": [],
+                        "Subscribers": [],
                         "account_created": str(datetime.now()),
-                        "registration_ip": client_ip
+                        "registration_ip": client_ip,
                     })
-                current_app.logger.debug(f"MongoDB history collection created for user ID: {user_id} from IP: {client_ip}")
+                current_app.logger.info(f"User {username} created successfully from IP: {client_ip}")
 
             # if an error occurs, rollback the changes
             except Exception as e:
                 current_app.logger.error(f"MongoDB error for user {user_id} from IP {client_ip}: {str(e)}")
                 return jsonify({"message": f"An error occurred: {str(e)}"}), 500
             
-            # if no error occurs, commit the changes
-            if connection.is_connected():
-                connection.commit()
-                current_app.logger.info(f"User {username} registered successfully with ID: {user_id} from IP: {client_ip}")
 
             return jsonify({
                 "message": "User created successfully",
