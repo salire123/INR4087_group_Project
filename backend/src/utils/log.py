@@ -9,9 +9,9 @@ from .env import Config
 def setup_logging():
     # if not ./log directory, create it
     
-    if not os.path.exists(Config.LOG_DIR, "./log"):
-        os.makedirs(Config.LOG_DIR, "./log"))
-    log_dir =  os.path.join(Config.LOG_DIR, "./log")
+    if not os.path.exists(Config.get.LOG_DIR, "./log"):
+        os.makedirs(Config.get.LOG_DIR, "./log")
+    log_dir =  os.path.join(Config.get.LOG_DIR, "./log")
     os.makedirs(log_dir, exist_ok=True)  # Create directory if it doesn’t exist
     
     # Create a rotating file handler (limits file size, rotates logs)

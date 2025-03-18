@@ -30,3 +30,7 @@ src/**/*.env.*
 # Root-level .vscode (if needed)
 .vscode
 
+# log
+**/log
+**/logs
+
