@@ -7,3 +7,4 @@ pymongo
 pytest
 python-dotenv
 Werkzeug
+redis

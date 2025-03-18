@@ -22,6 +22,7 @@ def connect_mysql():
         cursor = connection.cursor()
         yield (cursor, connection)
     except Error as e:
+        cursor.rollback()
         print(f"The error '{e}' occurred")
         raise  # Re-raise the exception to be handled by the caller
     finally:
@@ -33,7 +34,7 @@ def connect_mysql():
 def connect_mongo():
     client = None
     try:
-        client = pymongo.MongoClient(Config.get("MONGO_URI"))
+        client = pymongo.MongoClient(Config.get("MONGO_URL"))
         db = client[Config.get("MONGO_DATABASE")]
         yield db
     except pymongo.errors.ConnectionFailure as e:  # Updated to ConnectionFailure
@@ -56,7 +57,11 @@ def connect_Minio():
             secure=False
         )
         bucket_name = Config.get("MINIO_BUCKET")
-        url = f"{Config.get('MINIO_ENDPOINT')}/{bucket_name}"
+        if Config.get("DOCKER") is True:
+            #if we are running in a docker container
+            url = f"http://localhost:9000/{bucket_name}"
+        else:
+            url = f"http://{Config.get("MINIO_ENDPOINT")}/{bucket_name}"
         yield minioClient, bucket_name, url
     except Exception as e:
         print(f"Unexpected error: {e}")
