@@ -4,12 +4,10 @@ from typing import Dict, Any
 from .db import redis_connection
 from .env import Config
 
+from flask import current_app
+
 class JWTManager:
     """JWT 管理类，用于生成和解码 JWT Token"""
-    
-    # 类属性，所有实例共享同一个 blacklist
-    _blacklist = []
-
     def __init__(self, secret: str, algorithm: str = "HS256"):
         """
         初始化 JWTManager
@@ -33,12 +31,12 @@ class JWTManager:
         Returns:
             str: Generated JWT token
         """
+        
         token_payload = payload.copy()
         token_payload["exp"] = datetime.utcnow() + timedelta(seconds=expiration)
-        
+        current_app.logger.info(f"Generating token with payload: {token_payload}")
         # PyJWT encode returns bytes in newer versions (3.x), so we convert to string
         token = jwt.encode(token_payload, self.secret, algorithm=self.algorithm)
-        
         # If jwt.encode returns bytes, decode to string
         if isinstance(token, bytes):
             return token.decode('utf-8')
@@ -74,6 +72,8 @@ class JWTManager:
             token (str): 要加入黑名单的 Token
         """
         with redis_connection(0) as redis:
+            current_app.logger.info(f"Blacklisting token: {token}")
+            # set ttl
             redis.sadd(self._blacklist, token)
         return None
     

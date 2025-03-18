@@ -12,6 +12,9 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.get('SECRET_KEY')
 app.config['JWT'] = JWTManager(app.config['SECRET_KEY'])
 
+# Setup logging
+with app.app_context():
+    setup_logging()
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
