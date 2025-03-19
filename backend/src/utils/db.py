@@ -21,9 +21,9 @@ def connect_mysql():
         )
         cursor = connection.cursor()
         yield (cursor, connection)
-        cursor.commit()
+        connection.commit()
     except Error as e:
-        cursor.rollback()
+        connection.rollback()
         print(f"The error '{e}' occurred")
         raise  # Re-raise the exception to be handled by the caller
     finally:

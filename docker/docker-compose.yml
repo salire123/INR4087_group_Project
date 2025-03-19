@@ -45,7 +45,7 @@ services:
       - SERVICE_SECRET_KEY=apppassword
     entrypoint: /bin/sh
     # if fail to run shell script, try "sed -i 's/\r$//' minio-init.sh" to remove windows line endings
-    command: -c "sed -i 's/\r$//' /minio-init.sh && /minio-init.sh"
+    command: -c "/minio-init.sh"
     volumes:
       - minio-data:/data
       - ./minio/minio-init.sh:/minio-init.sh:ro

@@ -21,6 +21,7 @@ app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(post_bp, url_prefix='/posts')
 app.register_blueprint(analyze_bp, url_prefix='/analyze')
 app.register_blueprint(history_bp, url_prefix='/history')
+app.register_blueprint(user_bp, url_prefix='/user')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=Config.get('APP_PORT'))
