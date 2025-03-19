@@ -4,9 +4,6 @@ from routes import *
 from utils import *
 
 
-import os
-
-
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = Config.get('SECRET_KEY')
@@ -24,4 +21,13 @@ app.register_blueprint(history_bp, url_prefix='/history')
 app.register_blueprint(user_bp, url_prefix='/user')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=Config.get('APP_PORT'))
+    app.logger.info("-" * 50)
+    app.logger.info("Starting app")
+    app.logger.info(f"Starting app on port {Config.get('APP_PORT')}")
+
+    if Config.get('MODE') == 'debug':
+        app.logger.info("Running in debug mode")
+        app.run(debug=True, host='0.0.0.0', port=Config.get('APP_PORT'))
+    else:
+        app.logger.info("Running in production mode")
+        app.run(debug=False, host='0.0.0.0', port=Config.get('APP_PORT'))

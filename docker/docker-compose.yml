@@ -67,9 +67,14 @@ services:
         context: ../backend
         dockerfile: ../backend/Dockerfile
     restart: unless-stopped
+    container_name: myapp-backend
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
+
+      HOSTNAME: "myapp-backend"
+      MODE: "debug"
+
       # Flask
       TZ: Asia/Hong_Kong
       SECRET_KEY: ${SECRET_KEY}

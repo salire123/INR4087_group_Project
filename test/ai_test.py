@@ -10,6 +10,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from time import sleep
 import traceback
+import socket
 
 # Setup logging
 log_dir = './log'
@@ -17,9 +18,10 @@ os.makedirs(log_dir, exist_ok=True)  # Create log directory if it doesn't exist
 log_file = os.path.join(log_dir, f'syslog.log')
 
 # Configure logging with syslog-like format
+hostname = "AI-Test"  # Default hostname if not available
 logging.basicConfig(
     level=logging.DEBUG,  # Changed to DEBUG for more granularity
-    format='%(asctime)s %(levelname)s %(message)s',  # Syslog-like format
+    format=f'%(asctime)s {hostname} %(name)s[%(process)d]: %(levelname)s %(message)s',  # Syslog-like format
     datefmt='%b %d %H:%M:%S',  # e.g., "Mar 18 14:30:45"
     handlers=[
         logging.FileHandler(log_file),
@@ -145,7 +147,7 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
     token:
     {token_text}
     """
-    max_retries = 5  # Increased retries for unstable free model
+    max_retries = 15  # Increased retries for unstable free model
     for attempt in range(max_retries):
         logger.debug(f"Attempt {attempt + 1}/{max_retries} to generate API call for {user_email}, call {call_number}")
         try:
