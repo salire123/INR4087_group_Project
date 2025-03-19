@@ -9,6 +9,7 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 from time import sleep
+import traceback
 
 # Setup logging
 log_dir = './log'
@@ -44,6 +45,7 @@ class RestrictedAPICaller:
         self.headers = {
             'User-Agent': 'Restricted-API-Client/1.0',
             # No default Content-Type; let requests handle it
+            'Authorization': None  # Will be set dynamically if an API key is provided
         }
 
     def call_api(self, endpoint, method='GET', params=None, data=None, api_key=None, files=None):
@@ -80,11 +82,29 @@ class RestrictedAPICaller:
                     response = requests.post(url, headers=self.headers, params=params, data=data, files=files)
                 else:
                     response = requests.post(url, headers=self.headers, params=params, data=data)
+            elif method == 'PUT':
+                response = requests.put(url, headers=self.headers, params=params, data=data)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=self.headers, params=params, data=data)
             else:
                 raise ValueError(f"Unsupported method: {method}")
             
-            logger.debug(f"Request: {method} {url} - Headers: {self.headers} - Params: {params} - Data: {data} - Files: {files}")
+            logger.debug(f"Request: {method} {url} - Headers: {self.headers} - Params: {params} - Data: {data} - Files: {files} ")
             logger.debug(f"Response: {response.status_code} - Headers: {response.headers} - Content: {response.text}")
+
+            # Parse the JSON response and extract the token if it exists
+            try:
+                response_data = response.json()  # Convert JSON string to dictionary
+                api_key = response_data.get("token")  # Safely get the token (returns None if not found)
+            except json.JSONDecodeError:
+                # If response is not JSON, log it and leave api_key as None
+                logger.warning(f"Response is not JSON: {response.text}")
+                api_key = None
+
+            if api_key:
+                self.headers['Authorization'] = f"Bearer {api_key}"
+                logger.info(f"Using provided API key: {api_key}")
+
             return response
         except requests.exceptions.RequestException as e:
             logger.error(f"Request failed: {method} {url} - Error: {str(e)}")
@@ -132,7 +152,7 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
             # Increase timeout to 30 seconds
             response = openai_client.chat.completions.create(
                 extra_body={},
-                model="deepseek/deepseek-chat:free",
+                model="deepseek/deepseek-r1:free",
                 messages=[{"role": "user", "content": prompt}],
                 timeout=30  # Add timeout parameter if supported, or handle via requests
             )
@@ -149,7 +169,7 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
             if not cleaned_text or "{" not in cleaned_text or "}" not in cleaned_text:
                 logger.warning(f"Attempt {attempt + 1} returned incomplete response: {repr(cleaned_text)}")
                 if attempt == max_retries - 1:
-                    return fallback_api_call(user_email, call_number, call_history)
+                    raise ValueError("Failed to generate a valid API call")
                 sleep(1)  # Wait longer before retrying
                 continue
             
@@ -160,31 +180,9 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
         except (requests.exceptions.RequestException, ValueError) as e:
             logger.warning(f"Attempt {attempt + 1} failed - Error: {str(e)} - Raw text: {repr(api_call_text if 'api_call_text' in locals() else 'No response')}")
             if attempt == max_retries - 1:
-                logger.error(f"Max retries reached. Falling back to default API call.")
-                return fallback_api_call(user_email, call_number, call_history)
+                raise 
             sleep(1)  # Increased delay for retries
 
-def fallback_api_call(user_email, call_number, call_history):
-    """Return a fallback API call if AI fails."""
-    # If this is the first call and no history, default to registration
-    if call_number == 1 and not call_history:
-        return {
-            "endpoint": "/auth/register",
-            "method": "POST",
-            "params": None,
-            "data": {
-                "username": f"{user_email.split('@')[0]}",
-                "password": "password123",
-                "email": user_email
-            }
-        }
-    # Otherwise, default to fetching posts
-    return {
-        "endpoint": "/posts/get_posts",
-        "method": "GET",
-        "params": {"page": 1, "per_page": 10},
-        "data": None
-    }
 def simulate_user_browsing_with_memory():
     # Website setup
     base_url = "http://localhost:8080"  # Replace with your website's API base URL
@@ -204,6 +202,8 @@ def simulate_user_browsing_with_memory():
         
         # Execute 30 calls with memory
         for i in range(1, calls_per_set + 1):
+            
+
             logger.info(f"Generating Call {i}/{calls_per_set} for {user_email}")
             
             # Generate a single call with memory of previous calls
@@ -250,7 +250,7 @@ def simulate_user_browsing_with_memory():
             print(f"Call {i}/{calls_per_set} - {api_call['method']} {api_call['endpoint']}")
             print(json.dumps(result, indent=2))
             print("-" * 30)
-            time.sleep(0.5)  # Small delay between calls
+            time.sleep(2)  # Small delay between calls
         
         logger.info(f"Completed Time Set {user_id} for {user_email}")
         if user_id < num_users:
@@ -258,4 +258,11 @@ def simulate_user_browsing_with_memory():
             time.sleep(5)  # Delay between time sets
 
 if __name__ == "__main__":
-    simulate_user_browsing_with_memory()
+    try:
+        logger.info("-"*30)
+        logger.info("Starting user browsing simulation...")
+        simulate_user_browsing_with_memory()
+    except Exception as e:
+        error_details = traceback.format_exc()
+        logger.error(f"An error occurred: {str(error_details)}")
+        raise

@@ -71,6 +71,7 @@ services:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
       # Flask
+      TZ: Asia/Hong_Kong
       SECRET_KEY: ${SECRET_KEY}
       FLASK_APP: "app.py"
       APP_PORT: "${BACKEND_PORT}"
