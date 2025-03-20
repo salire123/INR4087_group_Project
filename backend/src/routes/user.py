@@ -163,7 +163,6 @@ def check_user_info():
         if not username:
             return jsonify({"message": "Missing username"}), 400
 
-        #get user info form mongodb
         current_app.logger.debug(f"Checking user info for: {username}")
         with connect_mongo() as mongo_client:
             db = mongo_client
@@ -172,13 +171,13 @@ def check_user_info():
             if not user_info:
                 return jsonify({"message": "User not found"}), 404
 
+            # Convert ObjectId to string
+            user_info["_id"] = str(user_info["_id"])
             return jsonify(user_info), 200
     except Exception as e:
-        # Log the full error with traceback
         error_details = traceback.format_exc()
         current_app.logger.error(f"Check user info error for IP {client_ip}: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred during user info check"}), 500
-
 
 
 

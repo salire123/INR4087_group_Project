@@ -16,6 +16,7 @@ def analyze_eachday_post():
     try:
         client_ip = request.remote_addr
         current_app.logger.info(f"Analyze each day post request received from IP: {client_ip}")
+        need_image = request.args.get("image", False)
 
         with connect_mongo() as mongo_client:
             # Create a db by userid
@@ -54,8 +55,13 @@ def analyze_eachday_post():
             plt.close()  # Close the plot to free memory
             
             current_app.logger.info(f"Posts per day plot generated successfully")
-            # Return the plot as an image response
-            return send_file(img_buffer, mimetype='image/png')
+            # Return the plot as an image response with json data
+            if need_image:
+                return send_file(img_buffer, mimetype='image/png')
+            else:
+                return jsonify({"data": post_count})
+            
+
         
     except Exception as e:
         # Log the full error with traceback
@@ -68,6 +74,7 @@ def top_ten_user_subscriber():
     try:
         client_ip = request.remote_addr
         current_app.logger.info(f"Top ten user subscriber request received from IP: {client_ip}")
+        need_image = request.args.get("image", False)
 
         with connect_mongo() as mongo_client:
             db = mongo_client
@@ -100,7 +107,12 @@ def top_ten_user_subscriber():
             img_buffer.seek(0)
             plt.close()
             current_app.logger.info(f"Top ten users with most subscribers plot generated successfully")
-            return send_file(img_buffer, mimetype='image/png')
+            
+            # Return the plot as an image response with json data
+            if need_image:
+                return send_file(img_buffer, mimetype='image/png')
+            else:
+                return jsonify({"data": top_users})
             
     except Exception as e:
         # Log the full error with traceback
