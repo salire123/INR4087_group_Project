@@ -80,15 +80,17 @@ def top_ten_user_subscriber():
             db = mongo_client
             collection = db["users"]
 
-            # Get the top 10 users with the most subscribers
-            users = collection.find().sort("subscribers", -1).limit(10)
+            # Get the top 10 users with at least 1 subscriber
+            users = collection.find({"Subscribers": {"$not": {"$size": 0}}}).sort("subscribers", -1).limit(10)
             current_app.logger.debug(f"Top ten users with most subscribers: {users}")
             top_users = []
             for user in users:
-                top_users.append({
-                    "username": user["username"],
-                    "subscribers": len(user["subscribers"])
-                })
+                subscriber_count = len(user["Subscribers"])
+                if subscriber_count > 0:  # Only include users with subscribers
+                    top_users.append({
+                        "username": user["username"],
+                        "subscribers": subscriber_count
+                    })
 
             # Generate a Matplotlib plot
             current_app.logger.debug(f"Generating plot for top ten users with most subscribers")
@@ -115,8 +117,6 @@ def top_ten_user_subscriber():
                 return jsonify({"data": top_users})
             
     except Exception as e:
-        # Log the full error with traceback
         error_details = traceback.format_exc()
         current_app.logger.error(f"Top ten user subscriber error for IP {client_ip}: {str(e)}\n{error_details}")
         return jsonify({"message": "An error occurred during analysis"}), 500
-

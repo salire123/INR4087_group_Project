@@ -102,6 +102,7 @@ def add_read_history():
         with connect_mongo() as mongo_client:
             db = mongo_client
             collection = db["users"]
+            posts_collection = db["posts"]
             
             # Check if post is already in history
             current_app.logger.debug(f"Checking if post {post_id} exists in history for user_id: {user_id} from IP: {client_ip}")
@@ -142,6 +143,13 @@ def add_read_history():
                         "timestamp": datetime.now()
                     }}}
                 )
+
+                posts_collection.update_one(
+                    {"_id": ObjectId(post_id)},  # Assuming post_id is an ObjectId
+                    {"$inc": {"read_count": 1}},  # Increment like_count by 1
+                    upsert=True  # Create post doc if it doesn’t exist (though unlikely)
+                )
+
                 current_app.logger.info(f"New history item added for user: {payload['username']}, post: {post_id} from IP: {client_ip}")
                 return jsonify({"message": "History added"}), 200
                 
@@ -195,12 +203,14 @@ def add_like():
         with connect_mongo() as mongo_client:
             db = mongo_client
             likes_collection = db["users"]
+            posts_collection = db["posts"]
             
             # Check if user already liked this post
             current_app.logger.debug(f"Checking if post {post_id} already liked by user_id: {user_id} from IP: {client_ip}")
             existing_item = likes_collection.find_one({
                 "user_id": user_id,
                 "likes.post_id": post_id
+                
             })
             
             if existing_item:
@@ -218,6 +228,14 @@ def add_like():
                         }}}
                     )
                 current_app.logger.info(f"Like added for post {post_id} by user: {payload['username']} from IP: {client_ip}")
+
+                posts_collection.update_one(
+                    {"_id": ObjectId(post_id)},  # Assuming post_id is an ObjectId
+                    {"$inc": {"like_count": 1}},  # Increment like_count by 1
+                    upsert=True  # Create post doc if it doesn’t exist (though unlikely)
+                )
+                current_app.logger.debug(f"Incremented like count for post {post_id} from IP: {client_ip}")
+
             return jsonify({"message": "Post liked successfully", "already_liked": False}), 200
                 
     except Exception as e:
@@ -270,6 +288,7 @@ def remove_like():
         with connect_mongo() as mongo_client:
             db = mongo_client
             collection = db["users"]
+            post_collection = db["posts"]
             
             # Check if the post was liked by the user
             current_app.logger.debug(f"Checking if post {post_id} was liked by user_id: {user_id} from IP: {client_ip}")
@@ -287,6 +306,12 @@ def remove_like():
             result = collection.update_one(
                 {"user_id": user_id},
                 {"$pull": {"likes": {"post_id": post_id}}}
+            )
+
+            # Decrement the like count for the post
+            post_collection.update_one(
+                {"_id": ObjectId(post_id)},  # Assuming post_id is an ObjectId
+                {"$inc": {"like_count": -1}},  # Decrement like_count by 1
             )
             
             if result.modified_count > 0:

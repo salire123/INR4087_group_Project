@@ -3,10 +3,14 @@ from datetime import datetime, timezone
 from bson.objectid import ObjectId
 from contextlib import contextmanager
 
+from .history import add_read_history
+
 from utils.db import connect_mysql, connect_mongo, connect_Minio, redis_connection
 import traceback
 
+
 post_bp = Blueprint('post', __name__)
+
 
 
 
@@ -88,7 +92,9 @@ def create_post():
                 "user_id": user_id,
                 "comments": [],
                 "comment_count": 0,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(timezone.utc),
+                "like_count": 0,
+                "read_count": 0
             }
             result = collection.insert_one(post)
             post_id = str(result.inserted_id)
@@ -181,6 +187,7 @@ def get_post():
         return jsonify({"message": "Post ID is required"}), 400
 
     try:
+
         current_app.logger.debug(f"Getting post with ID: {post_id} from IP: {client_ip}")
         with connect_mongo() as mongo_client:
             db = mongo_client
