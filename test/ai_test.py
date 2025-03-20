@@ -74,14 +74,14 @@ class RestrictedAPICaller:
 
     def _execute_request(self, url, method, params, data, files=None, api_key=None):
         method = method.upper()
-        logger.debug(f"Executing request: {method} {url} with params={params}, data={data}, files={files}")
+        logger.debug(f"Executing request: {method} {url} with params={params}, data={data}")
         try:
             if method == 'GET':
                 response = requests.get(url, headers=self.headers, params=params)
             elif method == 'POST':
                 if files:
                     # Ensure files is in the correct format (e.g., {'file': open(filepath, 'rb')})
-                    response = requests.post(url, headers=self.headers, params=params, data=data, files=files)
+                    response = requests.post(url, headers=self.headers, params=params, data=data)
                 else:
                     response = requests.post(url, headers=self.headers, params=params, data=data)
             elif method == 'PUT':
@@ -112,8 +112,15 @@ class RestrictedAPICaller:
             logger.error(f"Request failed: {method} {url} - Error: {str(e)}")
             raise
 
-def generate_user_api_call(base_url, user_email, call_history, call_number, token=None):
+def generate_user_api_call(base_url, user_email, call_history, call_number, token=None, last_call=False):
     """Generate a single API call with memory of previous calls, handling unstable AI."""
+    if last_call:
+        logger.debug(f"Generating API call for last call with token: {token}")
+        last_call_text = "you must logout now if you can"
+    else:
+        last_call_text = ""
+
+
     token_text = f'"{token}"' if token else "null"
     prompt = f"""
     You are simulating a user browsing a website with the base URL: {base_url}.
@@ -144,8 +151,13 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
         "data": {{"key": "value"}} or null
     }}
 
+    file you can upload:
+    - .\\2_20250317062136_Screenshot 2024-09-24 094054.png
+
     token:
     {token_text}
+
+    {last_call_text}
     """
     max_retries = 15  # Increased retries for unstable free model
     for attempt in range(max_retries):
@@ -189,75 +201,86 @@ def simulate_user_browsing_with_memory():
     # Website setup
     base_url = "http://localhost:8080"  # Replace with your website's API base URL
     api_client = RestrictedAPICaller(base_url)
-    token = None
+    token = {} # Store token for each user: {user_email: token, ...}
     
     # Simulate 3 time sets (users)
-    num_users = 3
-    calls_per_set = 30
+    eveyuser_run_set = 5 # run 5 set for each user
+    num_users = 30
+    calls_per_set = 5
     
-    for user_id in range(1, num_users + 1):
-        user_email = f"testuser{user_id}@email.com"
-        logger.info(f"Starting Time Set {user_id} for {user_email}")
-        
-        # Initialize call history for this user
-        call_history = []
-        
-        # Execute 30 calls with memory
-        for i in range(1, calls_per_set + 1):
-            
+    for eveyuser_run in range(1, eveyuser_run_set + 1):
+        logger.info(f"Starting Time Set {eveyuser_run} for {num_users} users")
+        for user_id in range(1, num_users + 1):
+            user_email = f"testuser{user_id}@email.com"
 
-            logger.info(f"Generating Call {i}/{calls_per_set} for {user_email}")
+            logger.info(f"Starting Time Set {user_id} for {user_email}")
             
-            # Generate a single call with memory of previous calls
-            api_call = generate_user_api_call(base_url, user_email, call_history, i, token=token)
+            # Initialize call history for this user
+            call_history = []
+            
+            # Execute 30 calls with memory
+            for i in range(1, calls_per_set + 1):
+                
 
-            
-            if isinstance(api_call, dict) and "error" in api_call:
-                logger.error(f"Error generating API call: {api_call}")
-                break
-            
-            
-            logger.debug(f"Generated API call: {json.dumps(api_call, indent=2)}")
+                logger.info(f"Generating Call {i}/{calls_per_set} for {user_email}")
 
-            # if have new token, update the token
-            if "token" in api_call:
-                token = api_call["token"]
-                logger.info(f"New token: {token}")
+                if user_email in token:
+                    logger.debug(f"Using existing token for {user_email}: {token[user_email]}")
+                    token_text = token[user_email]
+                else:
+                    logger.debug(f"No token found for {user_email}")
+                    token_text = None
+                
+                # Generate a single call with memory of previous calls
+                api_call = generate_user_api_call(base_url, user_email, call_history, i, token=token_text, last_call=(i == calls_per_set))
 
-            endpoint_base = api_call["endpoint"].split("?")[0]  # Strip query parameters
-            files = None
-            if endpoint_base in ["/posts/update_post", "/posts/create_post"]:
-                files = {"file": open(".\\2_20250317062136_Screenshot 2024-09-24 094054.png", "rb")}
+                
+                if isinstance(api_call, dict) and "error" in api_call:
+                    logger.error(f"Error generating API call: {api_call}")
+                    break
+                
+                
+                logger.debug(f"Generated API call: {json.dumps(api_call, indent=2)}")
 
-            # Execute the call
-            result = api_client.call_api(
-                endpoint=api_call["endpoint"],
-                method=api_call.get("method", "GET"),
-                params=api_call.get("params"),
-                data=api_call.get("data"),
-                files=files
-            )
-            # Close the file if it was opened
-            if files and "file" in files:
-                files["file"].close()
+                # if have new token, update the token
+                if "token" in api_call:
+                    token[user_email] = api_call["token"]
+                    logger.info(f"New token: {token}")
+
+                endpoint_base = api_call["endpoint"].split("?")[0]  # Strip query parameters
+                files = None
+                if endpoint_base in ["/posts/update_post", "/posts/create_post"]:
+                    files = {"file": open(".\\2_20250317062136_Screenshot 2024-09-24 094054.png", "rb")}
+
+                # Execute the call
+                result = api_client.call_api(
+                    endpoint=api_call["endpoint"],
+                    method=api_call.get("method", "GET"),
+                    params=api_call.get("params"),
+                    data=api_call.get("data"),
+                    files=files
+                )
+                # Close the file if it was opened
+                if files and "file" in files:
+                    files["file"].close()
+                
+                # Log the call and response
+                call_entry = {
+                    "call": api_call,
+                    "response": result
+                }
+
+                call_history.append(call_entry)
+                
+                print(f"Call {i}/{calls_per_set} - {api_call['method']} {api_call['endpoint']}")
+                print(json.dumps(result, indent=2))
+                print("-" * 30)
+                time.sleep(2)  # Small delay between calls
             
-            # Log the call and response
-            call_entry = {
-                "call": api_call,
-                "response": result
-            }
-
-            call_history.append(call_entry)
-            
-            print(f"Call {i}/{calls_per_set} - {api_call['method']} {api_call['endpoint']}")
-            print(json.dumps(result, indent=2))
-            print("-" * 30)
-            time.sleep(2)  # Small delay between calls
-        
-        logger.info(f"Completed Time Set {user_id} for {user_email}")
-        if user_id < num_users:
-            logger.info("Waiting before next time set...")
-            time.sleep(5)  # Delay between time sets
+            logger.info(f"Completed Time Set {user_id} for {user_email}")
+            if user_id < num_users:
+                logger.info("Waiting before next time set...")
+                time.sleep(5)  # Delay between time sets
 
 if __name__ == "__main__":
     try:
