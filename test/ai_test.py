@@ -33,11 +33,11 @@ logger = logging.getLogger(__name__)
 # Initialize OpenAI client
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
-openai_client = OpenAI(base_url="https://openrouter.ai/api/v1", api_key=openai_key)
+openai_client = OpenAI(base_url="https://openroute.ai/api/v1", api_key=openai_key)
 
 # Load API documentation (assuming it exists in the specified path)
 api_documentation_path = os.path.join("..", "api-documentation", "API_Documentation.md")
-with open(api_documentation_path, 'r') as file:
+with open(api_documentation_path, 'r', encoding="utf-8") as file:
     api_documentation_content = file.read()
 
 class RestrictedAPICaller:
