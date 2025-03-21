@@ -38,7 +38,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     {"message": "User created successfully", "user_id": 1}
     ```
 - **Notes:** The `user_id` may vary depending on the database; save it if needed.
-
+[x]done
 ---
 
 ### 2. Login with the New User
@@ -61,7 +61,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     {"token": "<jwt_token>"}
     ```
 - **Notes:** Copy the `<jwt_token>` from the response; it will be used in subsequent steps requiring authorization.
-
+[x]done
 ---
 
 ### 3. Create a New Post
@@ -88,7 +88,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     {"message": "Post created", "post_id": "<post_id>"}
     ```
 - **Notes:** The `<post_id>` will be a MongoDB ObjectId (e.g., `507f1f77bcf86cd799439011`). Save it for later steps.
-
+[x]done
 ---
 
 ### 4. Get Posts
@@ -130,7 +130,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     }
     ```
 - **Notes:** Verify the post from step 3 appears. If a media file was uploaded, check the `media_url`.
-
+[x]done
 ---
 
 ### 5. Get a Single Post
@@ -159,7 +159,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
       }
     }
     ```
-
+[x]done
 ---
 
 ### 6. Add a Comment to the Post
@@ -181,7 +181,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "Comment created"}
     ```
-
+[x]done
 ---
 
 ### 7. Verify Comment in Post Details
@@ -215,7 +215,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
       }
     }
     ```
-
+[x]done
 ---
 
 ### 8. Add Read History
@@ -235,7 +235,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     {"message": "History added"}
     ```
     *(If repeated, expect: `{"message": "History timestamp updated"}`)*
-
+[x]done
 ---
 
 ### 9. Add a Like to the Post
@@ -254,7 +254,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "Post liked successfully", "already_liked": false}
     ```
-
+[x]done
 ---
 
 ### 10. Get User History and Likes
@@ -281,7 +281,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
       ]
     }
     ```
-
+[x]done
 ---
 
 ### 11. Remove Like from the Post
@@ -300,7 +300,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "Like removed successfully"}
     ```
-
+[x]done
 ---
 
 ### 12. Update the Post
@@ -324,7 +324,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "Post updated"}
     ```
-
+[x]done
 ---
 
 ### 13. Verify Updated Post
@@ -358,7 +358,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
       }
     }
     ```
-
+[x]done
 ---
 
 ### 14. Delete the Post
@@ -377,7 +377,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "Post deleted"}
     ```
-
+[x]done
 ---
 
 ### 15. Verify Post Deletion
@@ -394,7 +394,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "Post not found"}
     ```
-
+[x]done
 ---
 
 ### 16. Logout
@@ -413,7 +413,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     ```json
     {"message": "User logged out successfully"}
     ```
-
+[x]done
 ---
 
 ### 17. Renew Token (Optional)
@@ -433,7 +433,7 @@ Below is a step-by-step User Acceptance Testing (UAT) plan for the Flask applica
     {"token": "<new_jwt_token>"}
     ```
 - **Notes:** Perform this step before logout if you want to test token renewal.
-
+[x]done
 ---
 
 ## Additional Notes

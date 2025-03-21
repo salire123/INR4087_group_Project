@@ -171,8 +171,10 @@ def renew_token():
         if payload is None:
             current_app.logger.warning(f"Token renewal attempt with invalid token from IP: {client_ip}")
             return jsonify({"message": "Token is invalid"}), 401
+        
 
-        username = payload.get("username", "unknown")
+
+        username = payload.get("username")
         current_app.logger.debug(f"Generating new token for user: {username} from IP: {client_ip}")
         new_token = current_app.config['JWT'].generate_token(payload, 3600)
         current_app.logger.debug(f"Blacklisting old token for user: {username} from IP: {client_ip}")

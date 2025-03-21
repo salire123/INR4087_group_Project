@@ -196,11 +196,11 @@ def check_user_info():
         current_app.logger.info(f"Check user info request received from IP: {client_ip}")
 
         username = request.args.get("username")
-        userid = request.args.get("userid")
-        if not username and not userid: # Check if either username or userid is provided
+        userid = request.args.get("user_id")
+        if not username and not userid:
             current_app.logger.warning(f"Missing username or userid for check_user_info request from IP: {client_ip}")
-            return jsonify({"message": "Missing username"}), 400
-
+            return jsonify({"message": "Missing username or user_id"}), 400
+        
         current_app.logger.debug(f"Checking user info for: {username}")
         with connect_mongo() as mongo_client:
             db = mongo_client
@@ -209,11 +209,9 @@ def check_user_info():
                 user_info = collection.find_one({"user_id": int(userid)})
             else:
                 user_info = collection.find_one({"username": username})
-            user_info = collection.find_one({"username": username})
             if not user_info:
                 return jsonify({"message": "User not found"}), 404
 
-            # Convert ObjectId to string
             user_info["_id"] = str(user_info["_id"])
             return jsonify(user_info), 200
     except Exception as e:

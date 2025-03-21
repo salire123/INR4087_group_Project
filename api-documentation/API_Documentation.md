@@ -131,15 +131,15 @@ POST /user/unsubscribe?username=<username>
 
 ### Check User Information
 ```
-GET /user/check_user_info?username=<username>&userid=<userid>
+GET /user/check_user_info?username=<username>&user_id=<user_id>
 ```
 **Query Parameters:**
 - `username` (string, optional) - Target username
-- `userid` (int, optional) - Target user ID (at least one of `username` or `userid` is required)
+- `user_id` (int, optional) - Target user ID (at least one of `username` or `user_id` is required)
 
 **Response:**
 - `200` - `{ "_id": "<mongo_id>", "username": "<string>", "user_id": <int>, "history": [], "likes": [], "Subscriber_to": [], "Subscribers": [], ... }`
-- `400` - `{ "message": "Missing username" }` (if neither `username` nor `userid` is provided)
+- `400` - `{ "message": "Missing username" }` (if neither `username` nor `user_id` is provided)
 - `404` - `{ "message": "User not found" }`
 - `500` - `{ "message": "An error occurred during user info check" }`
 
