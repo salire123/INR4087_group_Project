@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 from routes import *
 
 from utils import *
@@ -6,6 +7,7 @@ from utils import *
 
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}}) # Allow CORS for all origins
 app.config['SECRET_KEY'] = Config.get('SECRET_KEY')
 app.config['JWT'] = JWTManager(app.config['SECRET_KEY'])
 

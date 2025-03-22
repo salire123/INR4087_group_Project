@@ -9,3 +9,4 @@ python-dotenv
 Werkzeug
 redis
 matplotlib
+flask-cors

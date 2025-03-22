@@ -20,6 +20,9 @@ def login():
     password = request.form.get("password")
     token = request.headers.get("Authorization")
 
+    # debug log the login information
+    current_app.logger.debug(f"Login information: {username} password: {password} token: {token} from IP: {client_ip}")
+
     # check if the user is already logged in
     try:
         if token:
@@ -66,6 +69,10 @@ def register():
     password = request.form.get("password")
     email = request.form.get("email")
 
+
+    # debug log the registration information
+    current_app.logger.debug(f"Registration information: {username} password: {password} email: {email} from IP: {client_ip}")
+    
     try:
         with connect_mysql() as (cursor, connection):
             current_app.logger.debug(f"Checking if user exists: {username} - request from IP: {client_ip}")

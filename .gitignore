@@ -35,3 +35,6 @@ src/**/*.env.*
 **/logs
 **/*.log
 **/*.log.*
+
+# simon-testing
+frontend/simon-social-media-frontend
