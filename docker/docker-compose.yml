@@ -67,12 +67,12 @@ services:
         context: ../backend
         dockerfile: ../backend/Dockerfile
     restart: unless-stopped
-    container_name: myapp-backend
+    container_name: INT4087-backend
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     environment:
 
-      HOSTNAME: "myapp-backend"
+      HOSTNAME: "INT4087-backend"
       MODE: "debug"
 
       # Flask
@@ -116,11 +116,11 @@ services:
         context: ../frontend
         dockerfile: ../frontend/Dockerfile
     restart: unless-stopped
-    container_name: myapp-frontend
+    container_name: INT4087-frontend
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     environment:
-      - API_URL=http://myapp-backend:${BACKEND_PORT}
+      - API_URL=http://INT4087-backend:${BACKEND_PORT}
       - APP_PORT= ${FRONTEND_PORT}
       - SECRET_KEY= "${SECRET_KEY}"
       - TZ= "Asia/Hong_Kong"

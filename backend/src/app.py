@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from routes import *
 
-from utils import *
+from utils import * # Config is imported from here, geting the environment variables
 
 
 
@@ -27,7 +27,9 @@ if __name__ == '__main__':
     app.logger.info("Starting app")
     app.logger.info(f"Starting app on port {Config.get('APP_PORT')}")
 
-    if Config.get('MODE') == 'debug':
+    mode = Config.get('MODE', 'production')  # 默认生产模式
+
+    if mode == 'debug':
         app.logger.info("Running in debug mode")
         app.run(debug=True, host='0.0.0.0', port=Config.get('APP_PORT'))
     else:
