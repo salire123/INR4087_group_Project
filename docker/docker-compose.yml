@@ -110,6 +110,24 @@ services:
       - mysql
       - mongodb
       - minio
+
+  frontend:
+    build:
+        context: ../frontend
+        dockerfile: ../frontend/Dockerfile
+    restart: unless-stopped
+    container_name: myapp-frontend
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    environment:
+      - API_URL=http://myapp-backend:${BACKEND_PORT}
+      - APP_PORT= ${FRONTEND_PORT}
+      - SECRET_KEY= "${SECRET_KEY}"
+      - TZ= "Asia/Hong_Kong"
+    networks:
+      - outside-network
+    depends_on:
+      - backend
       
 networks:
   inside-network:

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h2 class="text-center">Create a New Post</h2>
+        <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="title">Post Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="content">Post Content</label>
+                <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="media_file">Upload Media (Image/Video)</label>
+                <input type="file" class="form-control-file" id="media_file" name="media_file" accept="image/*,video/*">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Create Post</button>
+        </form>
+        <div class="text-center mt-4">
+            <button class="btn btn-primary" onclick="window.history.back();">Back</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-center">Welcome, you are now logged in as {{ username }}</h2>
+        <h2 class="text-center">My Posts</h2>
+        {% if posts %}
+            {% for post in posts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ post.title }}</h5>
+                        <p class="card-text">{{ post.content }}</p>
+                        {% if post.media_url %}
+                            {% if post.media_url.endswith('.mp4') or post.media_url.endswith('.webm') or post.media_url.endswith('.ogg') %}
+                                <video controls class="img-fluid" alt="Post Media">
+                                    <source src="{{ post.media_url }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            {% else %}
+                                <img src="{{ post.media_url }}" class="img-fluid" alt="Post Media">
+                            {% endif %}
+                        {% endif %}
+                        <div class="d-flex justify-content-between mt-2">
+                            <a href="{{ url_for('edit_post', post_id=post._id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            <form action="{{ url_for('delete_post', post_id=post._id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center">You have not created any posts yet.</p>
+        {% endif %}
+
+        <!-- Pagination Controls -->
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('personal_page', page=current_page - 1) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+                {% for page_num in range(1, total_pages + 1) %}
+                    <li class="page-item {{ 'active' if page_num == current_page else '' }}">
+                        <a class="page-link" href="{{ url_for('personal_page', page=page_num) }}">{{ page_num }}</a>
+                    </li>
+                {% endfor %}
+                {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('personal_page', page=current_page + 1) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    <div class="text-center mt-4">
+        <button class="btn btn-primary" onclick="window.history.back();">Back</button>
+    </div>
+</div>
+{% endblock %}

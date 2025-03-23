@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="text-center">About Our Web</h2>
+    
+    <div class="text-center mt-4">
+        <h3>Posts Per Day Chart</h3>
+        <img src="{{ url_for('posts_per_day_chart') }}" alt="Posts Per Day Chart" class="img-fluid">
+    </div>
+
+    <div class="text-center mt-4">
+        <button class="btn btn-primary" onclick="window.history.back();">Back</button>
+    </div>
+</div>
+{% endblock %}

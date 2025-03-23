@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-center">Search Results for "{{ search_query }}"</h2>
+        {% if posts %}
+            {% for post in posts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <a href="{{ url_for('view_post', post_id=post._id) }}">{{ post.title }}</a>
+                        </h5>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                Author: <a href="{{ url_for('about_page', username=post.username) }}">{{ post.username }}</a>
+                            </small>
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                Created at: {{ post.created_at }}  <!-- Display creation time -->
+                            </small>
+                        </p>
+                        <p class="card-text">{{ post.content }}</p>
+                        {% if post.media_url %}
+                            <small class="text-muted">Media attached</small>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-muted">Views: {{ post.read_count }}</small>
+                            <small class="text-muted">Likes: {{ post.like_count }}</small>
+                            
+                        </div>
+                    </div>
+                    
+                    
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-center">No posts found matching your search.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
