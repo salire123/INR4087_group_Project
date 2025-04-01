@@ -424,9 +424,14 @@ def top_ten_user_subscribers():
     response = requests.get(get_api_url('analyze/top_ten_user_subscriber'))
     data = response.json()
     
-    # Create a list with up to 10 users
-    users = data.get('data', [])  # Get the list of users
-    top_users = users[:10]  # Get the top ten users
+    # Get the list of users
+    users = data.get('data', [])
+    
+    # Sort users based on the number of subscribers in descending order
+    sorted_users = sorted(users, key=lambda x: x['subscribers'], reverse=True)
+    
+    # Get the top ten users
+    top_users = sorted_users[:10]
 
     # Fill remaining slots with placeholders if there are less than 10 users
     while len(top_users) < 10:

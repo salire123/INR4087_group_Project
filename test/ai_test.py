@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # Initialize OpenAI client
 load_dotenv()
 openai_key = os.getenv("OPENAI_API_KEY")
-openai_client = OpenAI(base_url="https://openroute.ai/api/v1", api_key=openai_key)
+openai_client = OpenAI(base_url="https://openroute.ai/api/v1", api_key=openai_key,)
 
 # Load API documentation (assuming it exists in the specified path)
 api_documentation_path = os.path.join("..", "api-documentation", "API_Documentation.md")
@@ -166,7 +166,7 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
             # Increase timeout to 30 seconds
             response = openai_client.chat.completions.create(
                 extra_body={},
-                model="deepseek/deepseek-r1:free",
+                model="google/gemma-3-1b-it:free",
                 messages=[{"role": "user", "content": prompt}],
                 timeout=30  # Add timeout parameter if supported, or handle via requests
             )
@@ -198,7 +198,7 @@ def generate_user_api_call(base_url, user_email, call_history, call_number, toke
             sleep(1)  # Increased delay for retries
 
 def simulate_user_browsing_with_memory():
-    base_url = "http://localhost:8080"
+    base_url = "http://localhost:5000"
     api_client = RestrictedAPICaller(base_url)
     token = {}
     
@@ -229,6 +229,7 @@ def simulate_user_browsing_with_memory():
                     token=token_text, 
                     last_call=(i == calls_per_set)
                 )
+                
                 
                 if isinstance(api_call, dict) and "error" in api_call:
                     logger.error(f"Error generating API call: {api_call}")
